@@ -1,0 +1,174 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Updated color palette for AromaByte coffee theme */
+  --background: #ffffff;
+  --foreground: #2c1810;
+  --card: #ffffff;
+  --card-foreground: #2c1810;
+  --popover: #ffffff;
+  --popover-foreground: #2c1810;
+  --primary: #6b4423;
+  --primary-foreground: #ffffff;
+  --secondary: #8b5a3c;
+  --secondary-foreground: #ffffff;
+  --muted: #f5e6d3;
+  --muted-foreground: #6b4423;
+  --accent: #4a90e2;
+  --accent-foreground: #ffffff;
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --border: #e5d5c8;
+  --input: #f5e6d3;
+  --ring: #6b4423;
+  --chart-1: #6b4423;
+  --chart-2: #8b5a3c;
+  --chart-3: #4a90e2;
+  --chart-4: #f5e6d3;
+  --chart-5: #2c1810;
+  --radius: 0.625rem;
+  --sidebar: #f5e6d3;
+  --sidebar-foreground: #2c1810;
+  --sidebar-primary: #6b4423;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #8b5a3c;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #e5d5c8;
+  --sidebar-ring: #6b4423;
+}
+
+.dark {
+  --background: #1a0f0a;
+  --foreground: #f5e6d3;
+  --card: #2c1810;
+  --card-foreground: #f5e6d3;
+  --popover: #2c1810;
+  --popover-foreground: #f5e6d3;
+  --primary: #8b5a3c;
+  --primary-foreground: #ffffff;
+  --secondary: #6b4423;
+  --secondary-foreground: #f5e6d3;
+  --muted: #3d2a1a;
+  --muted-foreground: #a68b7a;
+  --accent: #4a90e2;
+  --accent-foreground: #ffffff;
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: #3d2a1a;
+  --input: #3d2a1a;
+  --ring: #8b5a3c;
+  --chart-1: #8b5a3c;
+  --chart-2: #6b4423;
+  --chart-3: #4a90e2;
+  --chart-4: #f5e6d3;
+  --chart-5: #a68b7a;
+  --sidebar: #2c1810;
+  --sidebar-foreground: #f5e6d3;
+  --sidebar-primary: #8b5a3c;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #6b4423;
+  --sidebar-accent-foreground: #f5e6d3;
+  --sidebar-border: #3d2a1a;
+  --sidebar-ring: #8b5a3c;
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  /* Added Poppins font variable for headings */
+  --font-poppins: var(--font-poppins);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  /* Added custom utility classes for coffee theme */
+  .font-poppins {
+    font-family: var(--font-poppins);
+  }
+  .text-coffee-primary {
+    color: #6b4423;
+  }
+  .text-coffee-secondary {
+    color: #8b5a3c;
+  }
+  /* Added missing coffee color classes for better contrast */
+  .text-coffee-medium {
+    color: #5d3a1f;
+  }
+  .text-coffee-dark {
+    color: #2c1810;
+  }
+  .text-coffee-light {
+    color: #a68b7a;
+  }
+  .bg-coffee-primary {
+    background-color: #6b4423;
+  }
+  .bg-coffee-secondary {
+    background-color: #8b5a3c;
+  }
+  .bg-coffee-beige {
+    background-color: #f5e6d3;
+  }
+  /* Added missing background coffee colors */
+  .bg-coffee-medium {
+    background-color: #5d3a1f;
+  }
+  .bg-coffee-dark {
+    background-color: #2c1810;
+  }
+  .bg-coffee-light {
+    background-color: #e5d5c8;
+  }
+  .border-coffee-light {
+    border-color: #e5d5c8;
+  }
+  /* Added cream background color */
+  .bg-cream {
+    background-color: #faf7f2;
+  }
+}
