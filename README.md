@@ -1,30 +1,19 @@
 # AromaByte marketplace
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+## ¿Cómo funciona?
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/juandavidalzatehenao275-gmailcoms-projects/v0-aroma-byte-marketplace)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/projects/ePZzCKptH8N)
+Este e-commerce de café artesanal utiliza un flujo de trabajo automatizado:
 
-## Overview
+1. **Desarrollo y modificaciones**  
+   El proyecto se desarrolla y actualiza continuamente con nuevas funcionalidades
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+2. **Control de versiones**  
+   Todos los cambios se registran automáticamente en este repositorio de GitHub
 
-## Deployment
+3. **Despliegue continuo**  
+   Vercel detecta los cambios y despliega la última versión automáticamente en producción
 
-Your project is live at:
+4. **Disponibilidad 24/7**  
+   El sitio está siempre actualizado y accesible para los usuarios
 
-**[https://vercel.com/juandavidalzatehenao275-gmailcoms-projects/v0-aroma-byte-marketplace](https://vercel.com/juandavidalzatehenao275-gmailcoms-projects/v0-aroma-byte-marketplace)**
-
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.app/chat/projects/ePZzCKptH8N](https://v0.app/chat/projects/ePZzCKptH8N)**
-
-## How It Works
-
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+🔗 **Visita la tienda:** [aroma-byte-marketplace.vercel.app](https://v0-aroma-byte-marketplace.vercel.app/)
