@@ -5,129 +5,37 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { MapPin, Award, Coffee, Star, Calendar, Users, Leaf, Heart } from "lucide-react"
-
-// Mock producer data
-const producerData = {
-  id: 1,
-  name: "María Elena Rodríguez",
-  farmName: "Finca El Paraíso",
-  location: "Huila, Colombia",
-  experience: "25 años",
-  specialty: "Café de Altura",
-  coverImage: "/coffee-farm-landscape.jpg",
-  profileImage: "/maria-elena-producer.jpg",
-  certifications: ["Orgánico", "Comercio Justo", "Rainforest Alliance", "UTZ Certified"],
-  story: `María Elena es una productora de tercera generación que ha dedicado su vida al cultivo de café de alta calidad. 
-  Su finca, ubicada en las montañas de Huila a 1,650 metros sobre el nivel del mar, se extiende por 15 hectáreas de 
-  terreno volcánico rico en nutrientes.
-  
-  Desde pequeña, María Elena aprendió los secretos del café de su abuelo, quien estableció la finca en 1952. 
-  Con el tiempo, ha combinado las técnicas tradicionales con métodos modernos y sostenibles, logrando un café 
-  excepcional que respeta el medio ambiente y apoya a su comunidad.
-  
-  Su compromiso con la calidad se refleja en cada grano: desde la selección cuidadosa de las variedades Caturra y 
-  Castillo, hasta el proceso de secado al sol en patios de concreto. María Elena también lidera un grupo de 
-  mujeres caficultoras en su región, promoviendo la igualdad de género y el empoderamiento femenino en el sector cafetero.`,
-  stats: {
-    farmSize: "15 hectáreas",
-    altitude: "1,650 msnm",
-    varieties: "Caturra, Castillo",
-    annualProduction: "120 sacos",
-    employees: "8 trabajadores",
-    foundedYear: "1952",
-  },
-  sustainabilityPractices: [
-    "Agricultura orgánica certificada",
-    "Conservación de agua y suelos",
-    "Protección de la biodiversidad",
-    "Energía solar para el procesamiento",
-    "Compostaje de pulpa de café",
-    "Reforestación con especies nativas",
-  ],
-}
-
-const producerProducts = [
-  {
-    id: 1,
-    name: "Café Huila Premium",
-    origin: "Huila",
-    price: 45000,
-    rating: 4.8,
-    reviews: 127,
-    image: "/coffee-huila-premium.jpg",
-    roastLevel: "Medio",
-    isNew: true,
-  },
-  {
-    id: 5,
-    name: "Huila Especial Reserva",
-    origin: "Huila",
-    price: 58000,
-    rating: 4.9,
-    reviews: 89,
-    image: "/coffee-huila-especial.jpg",
-    roastLevel: "Suave",
-    isLimited: true,
-  },
-  {
-    id: 6,
-    name: "Huila Orgánico",
-    origin: "Huila",
-    price: 52000,
-    rating: 4.8,
-    reviews: 156,
-    image: "/coffee-huila-organico.jpg",
-    roastLevel: "Medio",
-    isOrganic: true,
-  },
-  {
-    id: 7,
-    name: "Huila Tradicional",
-    origin: "Huila",
-    price: 42000,
-    rating: 4.7,
-    reviews: 73,
-    image: "/coffee-huila-tradicional.jpg",
-    roastLevel: "Fuerte",
-    isBestseller: true,
-  },
-  {
-    id: 8,
-    name: "Huila Micro Lote",
-    origin: "Huila",
-    price: 65000,
-    rating: 4.9,
-    reviews: 45,
-    image: "/coffee-huila-micro-lote.jpg",
-    roastLevel: "Suave",
-    isLimited: true,
-  },
-  {
-    id: 9,
-    name: "Huila Honey Process",
-    origin: "Huila",
-    price: 55000,
-    rating: 4.8,
-    reviews: 92,
-    image: "/coffee-huila-honey.jpg",
-    roastLevel: "Medio",
-    isNew: true,
-  },
-]
+import { getProducerById } from "@/lib/producers-data"
+import { getProductById } from "@/lib/products-data"
 
 interface ProducerProfileProps {
   producerId: string
 }
 
 export function ProducerProfile({ producerId }: ProducerProfileProps) {
-  const producer = producerData // In a real app, fetch by producerId
+  const producer = getProducerById(Number.parseInt(producerId))
+
+  if (!producer) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <h1 className="text-2xl font-bold text-coffee-primary mb-4">Productor no encontrado</h1>
+        <Button asChild>
+          <Link href="/producers">Ver Todos los Productores</Link>
+        </Button>
+      </div>
+    )
+  }
+
+  const producerProducts = producer.products
+    .map((productId) => getProductById(productId))
+    .filter((product) => product !== undefined)
 
   return (
     <div className="bg-white">
       {/* Cover Image */}
       <div className="relative h-64 md:h-80 lg:h-96 overflow-hidden">
         <img
-          src={producer.coverImage || "/placeholder.svg"}
+          src={producer.coverImage || "/placeholder.svg?height=400&width=1200&query=coffee farm landscape"}
           alt={`${producer.farmName} - Finca de café`}
           className="w-full h-full object-cover"
         />
@@ -165,7 +73,7 @@ export function ProducerProfile({ producerId }: ProducerProfileProps) {
               <div className="flex-shrink-0">
                 <div className="relative">
                   <img
-                    src={producer.profileImage || "/placeholder.svg"}
+                    src={producer.profileImage || "/placeholder.svg?height=128&width=128&query=coffee producer"}
                     alt={producer.name}
                     className="w-32 h-32 rounded-full object-cover border-4 border-coffee-primary/20"
                   />
@@ -279,71 +187,75 @@ export function ProducerProfile({ producerId }: ProducerProfileProps) {
         </div>
 
         {/* Producer's Products */}
-        <div>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-            <div>
-              <h2 className="font-poppins font-bold text-2xl text-coffee-primary mb-2">Productos de {producer.name}</h2>
-              <p className="text-muted-foreground">Descubre todos los cafés de esta finca excepcional</p>
+        {producerProducts.length > 0 && (
+          <div>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+              <div>
+                <h2 className="font-poppins font-bold text-2xl text-coffee-primary mb-2">
+                  Productos de {producer.name}
+                </h2>
+                <p className="text-muted-foreground">Descubre todos los cafés de esta finca excepcional</p>
+              </div>
+              <Button asChild variant="outline" className="border-coffee-primary text-coffee-primary bg-transparent">
+                <Link href="/catalog">Ver Más Productos</Link>
+              </Button>
             </div>
-            <Button asChild variant="outline" className="border-coffee-primary text-coffee-primary bg-transparent">
-              <Link href="/catalog">Ver Más Productos</Link>
-            </Button>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {producerProducts.map((product) => (
+                <Card
+                  key={product.id}
+                  className="group hover:shadow-lg transition-all duration-300 border-coffee-light"
+                >
+                  <CardContent className="p-0">
+                    <div className="relative overflow-hidden rounded-t-lg">
+                      <img
+                        src={product.images[0] || "/placeholder.svg?height=200&width=300&query=coffee bag"}
+                        alt={product.name}
+                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute top-3 left-3 flex flex-col gap-1">
+                        {product.badges?.map((badge) => (
+                          <Badge key={badge} className="bg-accent text-white">
+                            {badge}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-4 space-y-3">
+                      <div>
+                        <h3 className="font-poppins font-semibold text-lg text-coffee-primary">{product.name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {product.origin} • {product.roastLevel}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm font-medium">{product.rating}</span>
+                        <span className="text-sm text-muted-foreground">({product.reviews} reseñas)</span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="font-poppins font-bold text-xl text-coffee-primary">
+                          ${product.price.toLocaleString()}
+                        </span>
+                        <span className="text-sm text-muted-foreground">{product.weight}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+
+                  <CardFooter className="p-4 pt-0">
+                    <Button asChild className="w-full bg-coffee-primary hover:bg-coffee-secondary">
+                      <Link href={`/product/${product.id}`}>Ver Detalles</Link>
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {producerProducts.map((product) => (
-              <Card key={product.id} className="group hover:shadow-lg transition-all duration-300 border-coffee-light">
-                <CardContent className="p-0">
-                  <div className="relative overflow-hidden rounded-t-lg">
-                    <img
-                      src={product.image || "/placeholder.svg"}
-                      alt={product.name}
-                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-3 left-3 flex flex-col gap-1">
-                      {product.isNew && <Badge className="bg-accent text-white">Nuevo</Badge>}
-                      {product.isBestseller && <Badge className="bg-coffee-primary text-white">Más Vendido</Badge>}
-                      {product.isOrganic && (
-                        <Badge variant="secondary" className="bg-green-100 text-green-800">
-                          Orgánico
-                        </Badge>
-                      )}
-                      {product.isLimited && <Badge variant="destructive">Edición Limitada</Badge>}
-                    </div>
-                  </div>
-
-                  <div className="p-4 space-y-3">
-                    <div>
-                      <h3 className="font-poppins font-semibold text-lg text-coffee-primary">{product.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {product.origin} • {product.roastLevel}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm font-medium">{product.rating}</span>
-                      <span className="text-sm text-muted-foreground">({product.reviews} reseñas)</span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="font-poppins font-bold text-xl text-coffee-primary">
-                        ${product.price.toLocaleString()}
-                      </span>
-                      <span className="text-sm text-muted-foreground">250g</span>
-                    </div>
-                  </div>
-                </CardContent>
-
-                <CardFooter className="p-4 pt-0">
-                  <Button asChild className="w-full bg-coffee-primary hover:bg-coffee-secondary">
-                    <Link href={`/product/${product.id}`}>Ver Detalles</Link>
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   )

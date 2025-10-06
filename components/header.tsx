@@ -1,16 +1,23 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Search, ShoppingCart, User, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import Image from "next/image"
+import { useCart } from "@/lib/cart-context"
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
-  const [cartCount] = useState(3) // Mock cart count
+  const { getTotalItems } = useCart()
+  const cartCount = getTotalItems()
+  const [searchQuery, setSearchQuery] = useState("")
+  const router = useRouter()
 
   const navigation = [
     { name: "Inicio", href: "/" },
@@ -18,6 +25,12 @@ export function Header() {
     { name: "Productores", href: "/producers" },
     { name: "Nosotros", href: "/about" },
   ]
+
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+    }
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-coffee-light/20 bg-gradient-to-r from-white via-cream/30 to-white backdrop-blur-md supports-[backdrop-filter]:bg-white/80 shadow-sm">
@@ -55,6 +68,9 @@ export function Header() {
                 type="search"
                 placeholder="Buscar café premium..."
                 className="pl-12 pr-4 py-3 bg-cream/50 border-coffee-light/30 rounded-full focus:ring-2 focus:ring-coffee-primary/20 focus:border-coffee-primary transition-all duration-300"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearch}
               />
             </div>
           </div>
@@ -141,6 +157,9 @@ export function Header() {
                         type="search"
                         placeholder="Buscar café..."
                         className="pl-12 bg-cream/50 border-coffee-light/30 rounded-full"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={handleSearch}
                       />
                     </div>
                     <Link href="/login" onClick={() => setIsOpen(false)}>

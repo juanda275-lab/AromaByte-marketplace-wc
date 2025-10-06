@@ -8,100 +8,25 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Search, MapPin, Award, Users, Coffee } from "lucide-react"
+import { getAllProducers } from "@/lib/producers-data"
 
-const producers = [
-  {
-    id: "maria-gonzalez",
-    name: "María González",
-    farm: "Finca El Paraíso",
-    region: "Huila",
-    image: "/maria-gonzalez-producer.jpg",
-    certifications: ["Orgánico", "Comercio Justo", "Rainforest Alliance"],
-    experience: "25 años",
-    altitude: "1,800 msnm",
-    varieties: ["Caturra", "Colombia", "Castillo"],
-    description:
-      "Productora de tercera generación dedicada al cultivo sostenible de café especial en las montañas del Huila.",
-    products: 3,
-  },
-  {
-    id: "carlos-rodriguez",
-    name: "Carlos Rodríguez",
-    farm: "Hacienda San José",
-    region: "Nariño",
-    image: "/carlos-rodriguez-producer.jpg",
-    certifications: ["Orgánico", "UTZ"],
-    experience: "30 años",
-    altitude: "2,100 msnm",
-    varieties: ["Geisha", "Bourbon", "Typica"],
-    description: "Pionero en técnicas de fermentación controlada y procesamiento experimental en Nariño.",
-    products: 4,
-  },
-  {
-    id: "ana-martinez",
-    name: "Ana Martínez",
-    farm: "Finca La Esperanza",
-    region: "Eje Cafetero",
-    image: "/ana-martinez-producer.jpg",
-    certifications: ["Comercio Justo", "Rainforest Alliance"],
-    experience: "20 años",
-    altitude: "1,650 msnm",
-    varieties: ["Caturra", "Colombia"],
-    description: "Líder en su comunidad, promueve prácticas agrícolas sostenibles y empoderamiento femenino.",
-    products: 2,
-  },
-  {
-    id: "diego-herrera",
-    name: "Diego Herrera",
-    farm: "Finca Los Andes",
-    region: "Cauca",
-    image: "/diego-herrera-producer.jpg",
-    certifications: ["Orgánico", "Bird Friendly"],
-    experience: "15 años",
-    altitude: "1,950 msnm",
-    varieties: ["Geisha", "Pink Bourbon", "Java"],
-    description: "Joven productor innovador especializado en variedades exóticas y métodos de procesamiento únicos.",
-    products: 5,
-  },
-  {
-    id: "lucia-torres",
-    name: "Lucía Torres",
-    farm: "Finca El Mirador",
-    region: "Tolima",
-    image: "/lucia-torres-producer.jpg",
-    certifications: ["Orgánico", "Comercio Justo"],
-    experience: "22 años",
-    altitude: "1,750 msnm",
-    varieties: ["Caturra", "Castillo", "Colombia"],
-    description: "Experta en café de altura con enfoque en la conservación del medio ambiente y biodiversidad.",
-    products: 3,
-  },
-  {
-    id: "roberto-silva",
-    name: "Roberto Silva",
-    farm: "Hacienda Vista Hermosa",
-    region: "Santander",
-    image: "/roberto-silva-producer.jpg",
-    certifications: ["UTZ", "Rainforest Alliance"],
-    experience: "28 años",
-    altitude: "1,600 msnm",
-    varieties: ["Bourbon", "Typica", "Maragogipe"],
-    description: "Maestro tostador y productor con décadas de experiencia en el cultivo de variedades tradicionales.",
-    products: 4,
-  },
-]
+const getUniqueRegions = () => {
+  const producers = getAllProducers()
+  const regions = producers.map((p) => p.location.split(",")[0].trim())
+  return ["Todas las regiones", ...Array.from(new Set(regions))]
+}
 
-const regions = ["Todas las regiones", "Huila", "Nariño", "Eje Cafetero", "Cauca", "Tolima", "Santander"]
-const certifications = [
-  "Todas las certificaciones",
-  "Orgánico",
-  "Comercio Justo",
-  "Rainforest Alliance",
-  "UTZ",
-  "Bird Friendly",
-]
+const getUniqueCertifications = () => {
+  const producers = getAllProducers()
+  const allCerts = producers.flatMap((p) => p.certifications)
+  return ["Todas las certificaciones", ...Array.from(new Set(allCerts))]
+}
 
 export function ProducersPage() {
+  const producers = getAllProducers()
+  const regions = getUniqueRegions()
+  const certifications = getUniqueCertifications()
+
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRegion, setSelectedRegion] = useState("Todas las regiones")
   const [selectedCertification, setSelectedCertification] = useState("Todas las certificaciones")
@@ -109,10 +34,11 @@ export function ProducersPage() {
   const filteredProducers = producers.filter((producer) => {
     const matchesSearch =
       producer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      producer.farm.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      producer.region.toLowerCase().includes(searchTerm.toLowerCase())
+      producer.farmName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      producer.location.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesRegion = selectedRegion === "Todas las regiones" || producer.region === selectedRegion
+    const producerRegion = producer.location.split(",")[0].trim()
+    const matchesRegion = selectedRegion === "Todas las regiones" || producerRegion === selectedRegion
 
     const matchesCertification =
       selectedCertification === "Todas las certificaciones" || producer.certifications.includes(selectedCertification)
@@ -140,7 +66,7 @@ export function ProducersPage() {
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
-                <span>6 Regiones</span>
+                <span>{regions.length - 1} Regiones</span>
               </div>
               <div className="flex items-center gap-2">
                 <Coffee className="h-5 w-5" />
@@ -218,14 +144,14 @@ export function ProducersPage() {
                   >
                     <div className="relative h-64">
                       <Image
-                        src={producer.image || "/placeholder.svg"}
-                        alt={`${producer.name} - ${producer.farm}`}
+                        src={producer.profileImage || "/placeholder.svg"}
+                        alt={`${producer.name} - ${producer.farmName}`}
                         fill
                         className="object-cover"
                       />
                       <div className="absolute top-4 right-4">
                         <Badge variant="secondary" className="bg-coffee-dark text-white">
-                          {producer.products} productos
+                          {producer.products.length} productos
                         </Badge>
                       </div>
                     </div>
@@ -233,14 +159,14 @@ export function ProducersPage() {
                     <CardContent className="p-6">
                       <div className="mb-4">
                         <h3 className="text-xl font-bold text-coffee-dark mb-1">{producer.name}</h3>
-                        <p className="text-coffee-medium font-medium mb-2">{producer.farm}</p>
+                        <p className="text-coffee-medium font-medium mb-2">{producer.farmName}</p>
                         <div className="flex items-center gap-1 text-coffee-medium mb-3">
                           <MapPin className="h-4 w-4" />
-                          <span className="text-sm">{producer.region}</span>
+                          <span className="text-sm">{producer.location}</span>
                         </div>
                       </div>
 
-                      <p className="text-coffee-medium text-sm mb-4 line-clamp-3">{producer.description}</p>
+                      <p className="text-coffee-medium text-sm mb-4 line-clamp-3">{producer.story.split("\n\n")[0]}</p>
 
                       <div className="space-y-3 mb-4">
                         <div className="flex justify-between text-sm">
@@ -249,12 +175,12 @@ export function ProducersPage() {
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-coffee-medium">Altitud:</span>
-                          <span className="font-medium text-gray-900">{producer.altitude}</span>
+                          <span className="font-medium text-gray-900">{producer.stats.altitude}</span>
                         </div>
                         <div className="text-sm">
                           <span className="text-coffee-medium">Variedades:</span>
                           <div className="mt-1 flex flex-wrap gap-1">
-                            {producer.varieties.map((variety) => (
+                            {producer.stats.varieties.split(", ").map((variety) => (
                               <Badge
                                 key={variety}
                                 variant="outline"

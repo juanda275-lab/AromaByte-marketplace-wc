@@ -10,119 +10,14 @@ import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Star, Filter, ShoppingCart } from "lucide-react"
-
-const products = [
-  {
-    id: 1,
-    name: "Café Huila Premium",
-    origin: "Huila",
-    price: 45000,
-    rating: 4.8,
-    reviews: 127,
-    image: "/huila-coffee-bag.jpg",
-    roastLevel: "Medio",
-    brewingMethods: ["Espresso", "V60", "Chemex"],
-    isNew: true,
-  },
-  {
-    id: 2,
-    name: "Nariño Especial",
-    origin: "Nariño",
-    price: 52000,
-    rating: 4.9,
-    reviews: 89,
-    image: "/narino-coffee-bag.jpg",
-    roastLevel: "Suave",
-    brewingMethods: ["V60", "Chemex", "Prensa Francesa"],
-    isBestseller: true,
-  },
-  {
-    id: 3,
-    name: "Eje Cafetero Clásico",
-    origin: "Eje Cafetero",
-    price: 38000,
-    rating: 4.7,
-    reviews: 156,
-    image: "/eje-cafetero-coffee-bag.jpg",
-    roastLevel: "Fuerte",
-    brewingMethods: ["Espresso", "Moka"],
-    isOrganic: true,
-  },
-  {
-    id: 4,
-    name: "Tolima Gourmet",
-    origin: "Tolima",
-    price: 48000,
-    rating: 4.8,
-    reviews: 73,
-    image: "/tolima-coffee-bag.jpg",
-    roastLevel: "Medio",
-    brewingMethods: ["V60", "Chemex"],
-    isLimited: true,
-  },
-  {
-    id: 5,
-    name: "Cauca Artesanal",
-    origin: "Cauca",
-    price: 55000,
-    rating: 4.9,
-    reviews: 92,
-    image: "/cauca-coffee-bag.jpg",
-    roastLevel: "Suave",
-    brewingMethods: ["V60", "Chemex", "Prensa Francesa"],
-    isOrganic: true,
-  },
-  {
-    id: 6,
-    name: "Santander Tradicional",
-    origin: "Santander",
-    price: 42000,
-    rating: 4.6,
-    reviews: 134,
-    image: "/santander-coffee-bag.jpg",
-    roastLevel: "Fuerte",
-    brewingMethods: ["Espresso", "Moka"],
-    isNew: true,
-  },
-  {
-    id: 7,
-    name: "Quindío Premium",
-    origin: "Eje Cafetero",
-    price: 47000,
-    rating: 4.8,
-    reviews: 108,
-    image: "/quindio-coffee-bag.jpg",
-    roastLevel: "Medio",
-    brewingMethods: ["Espresso", "V60"],
-    isBestseller: true,
-  },
-  {
-    id: 8,
-    name: "Valle del Cauca Especial",
-    origin: "Valle del Cauca",
-    price: 49000,
-    rating: 4.7,
-    reviews: 85,
-    image: "/valle-cauca-coffee-bag.jpg",
-    roastLevel: "Suave",
-    brewingMethods: ["Chemex", "Prensa Francesa"],
-    isLimited: true,
-  },
-  {
-    id: 9,
-    name: "Boyacá Orgánico",
-    origin: "Boyacá",
-    price: 53000,
-    rating: 4.9,
-    reviews: 67,
-    image: "/boyaca-coffee-bag.jpg",
-    roastLevel: "Medio",
-    brewingMethods: ["V60", "Chemex"],
-    isOrganic: true,
-  },
-]
+import { useCart } from "@/lib/cart-context"
+import { products as allProducts } from "@/lib/products-data"
+import { useToast } from "@/hooks/use-toast"
 
 export function ProductCatalog() {
+  const { addItem } = useCart()
+  const { toast } = useToast()
+
   const [priceRange, setPriceRange] = useState([30000, 60000])
   const [selectedOrigins, setSelectedOrigins] = useState<string[]>([])
   const [selectedRoastLevels, setSelectedRoastLevels] = useState<string[]>([])
@@ -132,10 +27,10 @@ export function ProductCatalog() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
 
   const itemsPerPage = 6
-  const totalPages = Math.ceil(products.length / itemsPerPage)
+  const totalPages = Math.ceil(allProducts.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
-  const currentProducts = products.slice(startIndex, endIndex)
+  const currentProducts = allProducts.slice(startIndex, endIndex)
 
   const origins = ["Nariño", "Huila", "Eje Cafetero", "Tolima", "Cauca", "Santander", "Valle del Cauca", "Boyacá"]
   const roastLevels = ["Suave", "Medio", "Fuerte"]
@@ -163,6 +58,16 @@ export function ProductCatalog() {
     } else {
       setSelectedBrewingMethods(selectedBrewingMethods.filter((m) => m !== method))
     }
+  }
+
+  const handleAddToCart = (product: (typeof allProducts)[0]) => {
+    addItem(product.id, 1)
+
+    toast({
+      title: "Producto agregado",
+      description: `${product.name} se agregó al carrito`,
+      duration: 2000,
+    })
   }
 
   const FilterContent = () => (
@@ -288,7 +193,7 @@ export function ProductCatalog() {
             {/* Sort and Results */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <p className="text-muted-foreground">
-                Mostrando {startIndex + 1}-{Math.min(endIndex, products.length)} de {products.length} productos
+                Mostrando {startIndex + 1}-{Math.min(endIndex, allProducts.length)} de {allProducts.length} productos
               </p>
 
               <Select value={sortBy} onValueChange={setSortBy}>
@@ -315,19 +220,21 @@ export function ProductCatalog() {
                   <CardContent className="p-0">
                     <div className="relative overflow-hidden rounded-t-lg">
                       <img
-                        src={product.image || "/placeholder.svg"}
+                        src={product.images[0] || "/placeholder.svg"}
                         alt={product.name}
                         className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       <div className="absolute top-3 left-3 flex flex-col gap-1">
-                        {product.isNew && <Badge className="bg-accent text-white">Nuevo</Badge>}
-                        {product.isBestseller && <Badge className="bg-coffee-primary text-white">Más Vendido</Badge>}
-                        {product.isOrganic && (
+                        {product.badges?.isNew && <Badge className="bg-accent text-white">Nuevo</Badge>}
+                        {product.badges?.isBestseller && (
+                          <Badge className="bg-coffee-primary text-white">Más Vendido</Badge>
+                        )}
+                        {product.badges?.isOrganic && (
                           <Badge variant="secondary" className="bg-green-100 text-green-800">
                             Orgánico
                           </Badge>
                         )}
-                        {product.isLimited && <Badge variant="destructive">Edición Limitada</Badge>}
+                        {product.badges?.isLimited && <Badge variant="destructive">Edición Limitada</Badge>}
                       </div>
                     </div>
 
@@ -349,7 +256,7 @@ export function ProductCatalog() {
                         <span className="font-poppins font-bold text-xl text-coffee-primary">
                           ${product.price.toLocaleString()}
                         </span>
-                        <span className="text-sm text-muted-foreground">250g</span>
+                        <span className="text-sm text-muted-foreground">{product.weight}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -358,6 +265,7 @@ export function ProductCatalog() {
                     <Button
                       variant="outline"
                       className="w-full border-coffee-primary text-coffee-primary hover:bg-coffee-primary hover:text-white bg-transparent"
+                      onClick={() => handleAddToCart(product)}
                     >
                       <ShoppingCart className="h-4 w-4 mr-2" />
                       Agregar al Carrito

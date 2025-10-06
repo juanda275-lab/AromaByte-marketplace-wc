@@ -6,77 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Star, Minus, Plus, ShoppingCart, Heart, Share2, MapPin, Award, Coffee } from "lucide-react"
-
-// Mock product data - in a real app, this would come from an API
-const productData = {
-  id: 1,
-  name: "Café Huila Premium",
-  origin: "Huila, Colombia",
-  price: 45000,
-  originalPrice: 52000,
-  rating: 4.8,
-  reviews: 127,
-  roastLevel: "Medio",
-  tastingNotes: ["Chocolate", "Frutos Rojos", "Caramelo"],
-  description:
-    "Un café excepcional cultivado en las montañas de Huila, conocido por su perfil de sabor equilibrado y notas dulces distintivas.",
-  images: ["/product-detail-main.jpg", "/product-detail-2.jpg", "/product-detail-3.jpg", "/product-detail-4.jpg"],
-  specifications: {
-    weight: "250g",
-    altitude: "1,600 - 1,800 msnm",
-    process: "Lavado",
-    variety: "Caturra, Castillo",
-    harvest: "Abril - Junio 2024",
-  },
-  producer: {
-    id: 1,
-    name: "María Elena Rodríguez",
-    farmName: "Finca El Paraíso",
-    location: "Huila, Colombia",
-    experience: "25 años",
-    image: "/maria-elena-producer.jpg",
-    story:
-      "María Elena es una productora de tercera generación que ha dedicado su vida al cultivo de café de alta calidad. Su finca, ubicada en las montañas de Huila, utiliza métodos tradicionales combinados con técnicas modernas para producir granos excepcionales.",
-    certifications: ["Orgánico", "Comercio Justo", "Rainforest Alliance"],
-  },
-  inStock: true,
-  stockCount: 15,
-}
-
-const relatedProducts = [
-  {
-    id: 2,
-    name: "Nariño Especial",
-    origin: "Nariño",
-    price: 52000,
-    rating: 4.9,
-    image: "/narino-coffee-bag.jpg",
-  },
-  {
-    id: 3,
-    name: "Eje Cafetero Clásico",
-    origin: "Eje Cafetero",
-    price: 38000,
-    rating: 4.7,
-    image: "/eje-cafetero-coffee-bag.jpg",
-  },
-  {
-    id: 4,
-    name: "Tolima Gourmet",
-    origin: "Tolima",
-    price: 48000,
-    rating: 4.8,
-    image: "/tolima-coffee-bag.jpg",
-  },
-  {
-    id: 5,
-    name: "Cauca Artesanal",
-    origin: "Cauca",
-    price: 55000,
-    rating: 4.9,
-    image: "/cauca-coffee-bag.jpg",
-  },
-]
+import { getProductById, getRelatedProducts } from "@/lib/products-data"
+import { useCart } from "@/lib/cart-context"
 
 interface ProductDetailProps {
   productId: string
@@ -86,11 +17,35 @@ export function ProductDetail({ productId }: ProductDetailProps) {
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [isWishlisted, setIsWishlisted] = useState(false)
+  const { addItem } = useCart()
 
-  const product = productData // In a real app, fetch by productId
+  const product = getProductById(Number.parseInt(productId))
+
+  if (!product) {
+    return (
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="font-poppins font-bold text-3xl text-coffee-primary mb-4">Producto no encontrado</h1>
+          <p className="text-muted-foreground mb-8">El producto que buscas no existe o ha sido eliminado.</p>
+          <Button asChild className="bg-coffee-primary hover:bg-coffee-secondary">
+            <Link href="/catalog">Ver Catálogo</Link>
+          </Button>
+        </div>
+      </section>
+    )
+  }
+
+  const relatedProducts = getRelatedProducts(product.id, 4)
 
   const handleQuantityChange = (change: number) => {
     setQuantity(Math.max(1, Math.min(product.stockCount, quantity + change)))
+  }
+
+  const handleAddToCart = () => {
+    if (product && product.inStock) {
+      addItem(product.id, quantity)
+      setQuantity(1)
+    }
   }
 
   return (
@@ -119,23 +74,25 @@ export function ProductDetail({ productId }: ProductDetailProps) {
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="grid grid-cols-4 gap-2">
-              {product.images.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedImage(index)}
-                  className={`aspect-square rounded-lg overflow-hidden border-2 transition-colors ${
-                    selectedImage === index ? "border-coffee-primary" : "border-coffee-light"
-                  }`}
-                >
-                  <img
-                    src={image || "/placeholder.svg"}
-                    alt={`${product.name} ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
-            </div>
+            {product.images.length > 1 && (
+              <div className="grid grid-cols-4 gap-2">
+                {product.images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImage(index)}
+                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-colors ${
+                      selectedImage === index ? "border-coffee-primary" : "border-coffee-light"
+                    }`}
+                  >
+                    <img
+                      src={image || "/placeholder.svg"}
+                      alt={`${product.name} ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Product Info */}
@@ -169,11 +126,15 @@ export function ProductDetail({ productId }: ProductDetailProps) {
                 ${product.price.toLocaleString()}
               </span>
               {product.originalPrice && (
-                <span className="text-lg text-muted-foreground line-through">
-                  ${product.originalPrice.toLocaleString()}
-                </span>
+                <>
+                  <span className="text-lg text-muted-foreground line-through">
+                    ${product.originalPrice.toLocaleString()}
+                  </span>
+                  <Badge className="bg-green-100 text-green-800">
+                    {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                  </Badge>
+                </>
               )}
-              <Badge className="bg-green-100 text-green-800">13% OFF</Badge>
             </div>
 
             {/* Tasting Notes */}
@@ -224,6 +185,7 @@ export function ProductDetail({ productId }: ProductDetailProps) {
                   size="lg"
                   className="flex-1 bg-coffee-primary hover:bg-coffee-secondary"
                   disabled={!product.inStock}
+                  onClick={handleAddToCart}
                 >
                   <ShoppingCart className="h-5 w-5 mr-2" />
                   Agregar al Carrito
@@ -329,47 +291,51 @@ export function ProductDetail({ productId }: ProductDetailProps) {
         </div>
 
         {/* Related Products */}
-        <div>
-          <h2 className="font-poppins font-bold text-2xl text-coffee-primary mb-8 text-center">
-            Productos Relacionados
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {relatedProducts.map((relatedProduct) => (
-              <Card
-                key={relatedProduct.id}
-                className="group hover:shadow-lg transition-all duration-300 border-coffee-light"
-              >
-                <CardContent className="p-0">
-                  <div className="relative overflow-hidden rounded-t-lg">
-                    <img
-                      src={relatedProduct.image || "/placeholder.svg"}
-                      alt={relatedProduct.name}
-                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                  <div className="p-4 space-y-3">
-                    <div>
-                      <h3 className="font-poppins font-semibold text-lg text-coffee-primary">{relatedProduct.name}</h3>
-                      <p className="text-sm text-muted-foreground">{relatedProduct.origin}</p>
+        {relatedProducts.length > 0 && (
+          <div>
+            <h2 className="font-poppins font-bold text-2xl text-coffee-primary mb-8 text-center">
+              Productos Relacionados
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {relatedProducts.map((relatedProduct) => (
+                <Card
+                  key={relatedProduct.id}
+                  className="group hover:shadow-lg transition-all duration-300 border-coffee-light"
+                >
+                  <CardContent className="p-0">
+                    <div className="relative overflow-hidden rounded-t-lg">
+                      <img
+                        src={relatedProduct.images[0] || "/placeholder.svg"}
+                        alt={relatedProduct.name}
+                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm font-medium">{relatedProduct.rating}</span>
+                    <div className="p-4 space-y-3">
+                      <div>
+                        <h3 className="font-poppins font-semibold text-lg text-coffee-primary">
+                          {relatedProduct.name}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">{relatedProduct.origin}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm font-medium">{relatedProduct.rating}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-poppins font-bold text-xl text-coffee-primary">
+                          ${relatedProduct.price.toLocaleString()}
+                        </span>
+                      </div>
+                      <Button asChild className="w-full bg-coffee-primary hover:bg-coffee-secondary">
+                        <Link href={`/product/${relatedProduct.id}`}>Ver Detalles</Link>
+                      </Button>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="font-poppins font-bold text-xl text-coffee-primary">
-                        ${relatedProduct.price.toLocaleString()}
-                      </span>
-                    </div>
-                    <Button asChild className="w-full bg-coffee-primary hover:bg-coffee-secondary">
-                      <Link href={`/product/${relatedProduct.id}`}>Ver Detalles</Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   )

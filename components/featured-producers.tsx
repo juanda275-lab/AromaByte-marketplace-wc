@@ -3,45 +3,12 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { MapPin, Award, Coffee } from "lucide-react"
-
-const featuredProducers = [
-  {
-    id: 1,
-    name: "María Elena Rodríguez",
-    location: "Huila, Colombia",
-    experience: "25 años",
-    specialty: "Café de Altura",
-    image: "/maria-elena-producer.jpg",
-    farmName: "Finca El Paraíso",
-    certifications: ["Orgánico", "Comercio Justo"],
-    description:
-      "Productora de tercera generación especializada en café de altura con métodos tradicionales y sostenibles.",
-  },
-  {
-    id: 2,
-    name: "Carlos Mendoza",
-    location: "Nariño, Colombia",
-    experience: "18 años",
-    specialty: "Café Especial",
-    image: "/carlos-mendoza-producer.jpg",
-    farmName: "Hacienda Los Andes",
-    certifications: ["Rainforest Alliance", "UTZ"],
-    description: "Innovador en técnicas de procesamiento que resaltan los sabores únicos del café nariñense.",
-  },
-  {
-    id: 3,
-    name: "Ana Sofía Herrera",
-    location: "Eje Cafetero, Colombia",
-    experience: "30 años",
-    specialty: "Café Gourmet",
-    image: "/ana-sofia-producer.jpg",
-    farmName: "Finca La Esperanza",
-    certifications: ["Orgánico", "Bird Friendly"],
-    description: "Líder en prácticas agroecológicas y conservación de la biodiversidad en el cultivo de café.",
-  },
-]
+import { getAllProducers } from "@/lib/producers-data"
 
 export function FeaturedProducers() {
+  const allProducers = getAllProducers()
+  const featuredProducers = allProducers.slice(0, 3)
+
   return (
     <section className="py-16 lg:py-24 bg-coffee-beige">
       <div className="container mx-auto px-4">
@@ -63,7 +30,7 @@ export function FeaturedProducers() {
                 <div className="text-center mb-6">
                   <div className="relative inline-block mb-4">
                     <img
-                      src={producer.image || "/placeholder.svg"}
+                      src={producer.profileImage || "/placeholder.svg"}
                       alt={producer.name}
                       className="w-24 h-24 rounded-full object-cover mx-auto border-4 border-coffee-primary/20"
                     />
@@ -95,7 +62,7 @@ export function FeaturedProducers() {
                   <div className="space-y-2">
                     <span className="text-sm text-muted-foreground">Certificaciones:</span>
                     <div className="flex flex-wrap gap-1">
-                      {producer.certifications.map((cert) => (
+                      {producer.certifications.slice(0, 2).map((cert) => (
                         <Badge
                           key={cert}
                           variant="secondary"
@@ -108,7 +75,9 @@ export function FeaturedProducers() {
                     </div>
                   </div>
 
-                  <p className="text-sm text-muted-foreground leading-relaxed text-pretty">{producer.description}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed text-pretty line-clamp-3">
+                    {producer.story.split("\n\n")[0]}
+                  </p>
 
                   <Button asChild className="w-full bg-coffee-primary hover:bg-coffee-secondary mt-4">
                     <Link href={`/producer/${producer.id}`}>Conocer Más</Link>

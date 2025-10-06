@@ -9,40 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, Truck, CreditCard } from "lucide-react"
-
-// Mock cart data
-const initialCartItems = [
-  {
-    id: 1,
-    name: "Café Huila Premium",
-    origin: "Huila",
-    price: 45000,
-    quantity: 2,
-    image: "/coffee-huila-premium.jpg",
-    roastLevel: "Medio",
-    weight: "250g",
-  },
-  {
-    id: 2,
-    name: "Nariño Especial",
-    origin: "Nariño",
-    price: 52000,
-    quantity: 1,
-    image: "/coffee-narino-especial.jpg",
-    roastLevel: "Suave",
-    weight: "250g",
-  },
-  {
-    id: 3,
-    name: "Eje Cafetero Clásico",
-    origin: "Eje Cafetero",
-    price: 38000,
-    quantity: 3,
-    image: "/coffee-eje-cafetero-clasico.jpg",
-    roastLevel: "Fuerte",
-    weight: "250g",
-  },
-]
+import { useCart } from "@/lib/cart-context"
 
 const shippingOptions = [
   {
@@ -76,22 +43,10 @@ const shippingOptions = [
 ]
 
 export function ShoppingCartPage() {
-  const [cartItems, setCartItems] = useState(initialCartItems)
+  const { items: cartItems, updateQuantity, removeItem } = useCart()
   const [selectedShipping, setSelectedShipping] = useState("servientrega")
   const [promoCode, setPromoCode] = useState("")
   const [promoDiscount, setPromoDiscount] = useState(0)
-
-  const updateQuantity = (id: number, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      removeItem(id)
-      return
-    }
-    setCartItems(cartItems.map((item) => (item.id === id ? { ...item, quantity: newQuantity } : item)))
-  }
-
-  const removeItem = (id: number) => {
-    setCartItems(cartItems.filter((item) => item.id !== id))
-  }
 
   const applyPromoCode = () => {
     // Mock promo code logic
