@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import Image from "next/image"
 import { useCart } from "@/lib/cart-context"
+import { NotificationsPanel } from "@/components/notifications-panel"
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
@@ -96,6 +97,10 @@ export function Header() {
                 <span className="font-medium">Ingresar</span>
               </Button>
             </Link>
+
+            <div className="hidden sm:block">
+              <NotificationsPanel />
+            </div>
 
             <Link href="/cart">
               <Button
