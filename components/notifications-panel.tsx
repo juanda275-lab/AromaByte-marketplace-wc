@@ -51,19 +51,23 @@ export function NotificationsPanel() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="relative text-coffee-primary hover:text-coffee-secondary hover:bg-coffee-primary/5 transition-all duration-300 rounded-full p-3"
+        >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs">
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg border border-white/20 animate-pulse">
               {unreadCount}
-            </Badge>
+            </span>
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80">
-        <div className="flex items-center justify-between px-4 py-2 border-b">
-          <h3 className="font-semibold">Notificaciones</h3>
-          {unreadCount > 0 && <Badge variant="secondary">{unreadCount} nuevas</Badge>}
+      <DropdownMenuContent align="end" className="w-96 z-[100] shadow-2xl border-coffee-light/20">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-coffee-light/20 bg-gradient-to-r from-coffee-primary/5 to-coffee-secondary/5">
+          <h3 className="font-semibold text-coffee-primary">Notificaciones</h3>
+          {unreadCount > 0 && <Badge className="bg-red-500 text-white">{unreadCount} nuevas</Badge>}
         </div>
 
         {notifications.length === 0 ? (
@@ -78,7 +82,9 @@ export function NotificationsPanel() {
               return (
                 <DropdownMenuItem
                   key={notification.id}
-                  className={`flex items-start gap-3 p-4 cursor-pointer ${!notification.read ? "bg-accent/50" : ""}`}
+                  className={`flex items-start gap-3 p-4 cursor-pointer hover:bg-coffee-primary/5 transition-colors ${
+                    !notification.read ? "bg-coffee-primary/10 border-l-4 border-coffee-primary" : ""
+                  }`}
                   onClick={() => markAsRead(notification.id)}
                 >
                   <div
@@ -101,14 +107,14 @@ export function NotificationsPanel() {
                     />
                   </div>
                   <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium leading-none">{notification.title}</p>
+                    <p className="text-sm font-medium leading-none text-coffee-primary">{notification.title}</p>
                     <p className="text-sm text-muted-foreground">{notification.message}</p>
                     <p className="text-xs text-muted-foreground">{notification.time}</p>
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6"
+                    className="h-6 w-6 hover:bg-red-100 hover:text-red-600"
                     onClick={(e) => {
                       e.stopPropagation()
                       removeNotification(notification.id)
