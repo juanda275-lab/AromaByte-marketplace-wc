@@ -1,11 +1,13 @@
 "use client"
 
+import { useState } from "react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Package, Clock, CheckCircle, XCircle, TrendingUp, DollarSign, Users } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Package, Clock, CheckCircle, XCircle, TrendingUp, DollarSign, Users, MapPin, Phone, Mail } from "lucide-react"
 import { Bar, BarChart, Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
 
 const salesData = [
@@ -76,6 +78,14 @@ export default function ProducerDashboard() {
   const totalRevenue = mockOrders.reduce((sum, order) => sum + order.total, 0)
   const deliveredOrders = mockOrders.filter((order) => order.status === "delivered").length
   const totalCustomers = new Set(mockOrders.map((order) => order.customer)).size
+
+  const [selectedOrder, setSelectedOrder] = useState<(typeof mockOrders)[0] | null>(null)
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false)
+
+  const handleViewDetails = (order: (typeof mockOrders)[0]) => {
+    setSelectedOrder(order)
+    setIsDetailsOpen(true)
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -241,7 +251,7 @@ export default function ProducerDashboard() {
                         </Button>
                       )}
                       {(order.status === "shipped" || order.status === "delivered") && (
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" onClick={() => handleViewDetails(order)}>
                           Ver Detalles
                         </Button>
                       )}
@@ -252,6 +262,116 @@ export default function ProducerDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Order Details Modal */}
+        <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Detalles del Pedido</DialogTitle>
+              <DialogDescription>Información completa del pedido {selectedOrder?.id}</DialogDescription>
+            </DialogHeader>
+
+            {selectedOrder && (
+              <div className="space-y-6">
+                {/* Order Status */}
+                <div className="flex items-center justify-between p-4 bg-accent/50 rounded-lg">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Estado del Pedido</p>
+                    <Badge className={`mt-1 ${statusConfig[selectedOrder.status as keyof typeof statusConfig].color}`}>
+                      {statusConfig[selectedOrder.status as keyof typeof statusConfig].label}
+                    </Badge>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">Fecha</p>
+                    <p className="font-semibold">{selectedOrder.date}</p>
+                  </div>
+                </div>
+
+                {/* Customer Information */}
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">Información del Cliente</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-start gap-3">
+                      <Users className="h-5 w-5 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Nombre</p>
+                        <p className="font-medium">{selectedOrder.customer}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p className="font-medium">cliente@example.com</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Teléfono</p>
+                        <p className="font-medium">+57 300 123 4567</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Dirección</p>
+                        <p className="font-medium">Calle 123 #45-67, Bogotá</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Product Information */}
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">Detalles del Producto</h3>
+                  <div className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-semibold">{selectedOrder.product}</p>
+                        <p className="text-sm text-muted-foreground">Cantidad: {selectedOrder.quantity} unidades</p>
+                      </div>
+                      <p className="font-semibold">${selectedOrder.total.toLocaleString("es-CO")}</p>
+                    </div>
+                    <div className="flex justify-between text-sm pt-2 border-t">
+                      <span className="text-muted-foreground">Precio unitario</span>
+                      <span>${(selectedOrder.total / selectedOrder.quantity).toLocaleString("es-CO")}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Shipping Information */}
+                {selectedOrder.status === "shipped" && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-lg">Información de Envío</h3>
+                    <div className="border rounded-lg p-4 space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Transportadora</span>
+                        <span className="font-medium">Coordinadora</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Número de guía</span>
+                        <span className="font-medium">COO123456789</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Fecha de envío</span>
+                        <span className="font-medium">{selectedOrder.date}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4">
+                  <Button className="flex-1 bg-[#6F4E37] hover:bg-[#5a3d2b]">Imprimir Etiqueta</Button>
+                  <Button variant="outline" className="flex-1 bg-transparent" onClick={() => setIsDetailsOpen(false)}>
+                    Cerrar
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
 
       <Footer />
