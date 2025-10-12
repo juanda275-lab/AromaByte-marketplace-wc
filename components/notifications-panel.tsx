@@ -38,23 +38,34 @@ const mockNotifications = [
 
 export function NotificationsPanel() {
   const [notifications, setNotifications] = useState(mockNotifications)
+  const [isOpen, setIsOpen] = useState(false)
   const unreadCount = notifications.filter((n) => !n.read).length
 
+  console.log("[v0] NotificationsPanel rendered, unreadCount:", unreadCount)
+
   const markAsRead = (id: number) => {
+    console.log("[v0] Marking notification as read:", id)
     setNotifications(notifications.map((n) => (n.id === id ? { ...n, read: true } : n)))
   }
 
   const removeNotification = (id: number) => {
+    console.log("[v0] Removing notification:", id)
     setNotifications(notifications.filter((n) => n.id !== id))
   }
 
+  const handleOpenChange = (open: boolean) => {
+    console.log("[v0] Dropdown open state changed:", open)
+    setIsOpen(open)
+  }
+
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
           size="sm"
           className="relative text-coffee-primary hover:text-coffee-secondary hover:bg-coffee-primary/5 transition-all duration-300 rounded-full p-3"
+          onClick={() => console.log("[v0] Notification button clicked")}
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
