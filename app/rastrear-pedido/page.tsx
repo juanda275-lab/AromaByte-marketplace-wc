@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Search, Package, Truck, CheckCircle, MapPin, Calendar, Clock } from "lucide-react"
+import { productsData } from "@/lib/products-data"
 
 export default function TrackOrderPage() {
   return (
@@ -25,6 +26,10 @@ function TrackOrderContent() {
   const [orderNumber, setOrderNumber] = useState("")
   const [searchedOrder, setSearchedOrder] = useState<string | null>(null)
   const [isSearching, setIsSearching] = useState(false)
+
+  const product1 = productsData[0] // Café Huila Premium
+  const product2 = productsData[1] // Nariño Especial
+  const product3 = productsData[2] // Eje Cafetero Clásico
 
   // Mock order data
   const mockOrders: Record<string, any> = {
@@ -42,10 +47,10 @@ function TrackOrderContent() {
       },
       items: [
         {
-          name: "Café Huila Premium",
+          name: product1.name,
           quantity: 2,
-          price: 45000,
-          image: "/cafe-huila-premium-bolsa-de-cafe-colombiano.jpg",
+          price: product1.price,
+          image: product1.images[0],
         },
       ],
       timeline: [
@@ -72,10 +77,10 @@ function TrackOrderContent() {
       },
       items: [
         {
-          name: "Café Nariño Especial",
+          name: product2.name,
           quantity: 1,
-          price: 48000,
-          image: "/cafe-narino-especial-bolsa-premium.jpg",
+          price: product2.price,
+          image: product2.images[0],
         },
       ],
       timeline: [
@@ -101,10 +106,10 @@ function TrackOrderContent() {
       },
       items: [
         {
-          name: "Café Eje Cafetero Clásico",
+          name: product3.name,
           quantity: 3,
-          price: 42000,
-          image: "/cafe-eje-cafetero-clasico-bolsa-tradicional.jpg",
+          price: product3.price,
+          image: product3.images[0],
         },
       ],
       timeline: [
