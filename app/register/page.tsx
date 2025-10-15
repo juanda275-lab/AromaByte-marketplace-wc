@@ -62,6 +62,9 @@ export default function RegisterPage() {
     try {
       const supabase = createClient()
 
+      console.log("[v0] Starting signup process for:", email)
+      console.log("[v0] Redirect URL will be:", `${window.location.origin}/login`)
+
       // Sign up the user
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
@@ -74,14 +77,32 @@ export default function RegisterPage() {
         },
       })
 
+      console.log("[v0] Signup response:", { data, error: signUpError })
+
       if (signUpError) {
-        setError(signUpError.message)
+        console.error("[v0] Signup error:", signUpError)
+
+        // Handle specific error cases
+        if (signUpError.message.includes("already registered")) {
+          setError("Este email ya está registrado. Por favor inicia sesión o usa otro email.")
+        } else {
+          setError(signUpError.message)
+        }
         setLoading(false)
         return
       }
 
       // If user was created successfully
       if (data.user) {
+        console.log("[v0] User created successfully:", data.user.id)
+
+        // Check if email confirmation is required
+        if (data.user.identities && data.user.identities.length === 0) {
+          setError("Este email ya está registrado. Por favor inicia sesión.")
+          setLoading(false)
+          return
+        }
+
         // Create profile in public.profiles table
         const { error: profileError } = await supabase.from("profiles").insert({
           id: data.user.id,
@@ -90,18 +111,20 @@ export default function RegisterPage() {
         })
 
         if (profileError) {
-          console.error("Error creating profile:", profileError)
+          console.error("[v0] Error creating profile:", profileError)
           // Don't show error to user as auth was successful
+        } else {
+          console.log("[v0] Profile created successfully")
         }
 
         setSuccess(true)
         setTimeout(() => {
           router.push("/login")
-        }, 2000)
+        }, 3000)
       }
     } catch (err) {
+      console.error("[v0] Unexpected error:", err)
       setError("Ocurrió un error al crear la cuenta. Por favor intenta de nuevo.")
-      console.error(err)
     } finally {
       setLoading(false)
     }
