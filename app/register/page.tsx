@@ -63,14 +63,14 @@ export default function RegisterPage() {
       const supabase = createClient()
 
       console.log("[v0] Starting signup process for:", email)
-      console.log("[v0] Redirect URL will be:", `${window.location.origin}/login`)
+      console.log("[v0] Redirect URL will be:", `${window.location.origin}/auth/callback`)
 
       // Sign up the user
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/login`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
             full_name: name,
           },
