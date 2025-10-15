@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -8,69 +8,43 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Search, MapPin, Award, Users, Coffee } from "lucide-react"
-import { supabase } from "@/lib/supabaseClient"
+import { getAllProducers } from "@/lib/producers-data"
+
+const getUniqueRegions = () => {
+  const producers = getAllProducers()
+  const regions = producers.map((p) => p.location.split(",")[0].trim())
+  return ["Todas las regiones", ...Array.from(new Set(regions))]
+}
+
+const getUniqueCertifications = () => {
+  const producers = getAllProducers()
+  const allCerts = producers.flatMap((p) => p.certifications)
+  return ["Todas las certificaciones", ...Array.from(new Set(allCerts))]
+}
 
 export function ProducersPage() {
-  const [producers, setProducers] = useState<any[]>([])
-  const [filteredProducers, setFilteredProducers] = useState<any[]>([])
-  const [regions, setRegions] = useState<string[]>([])
-  const [certifications, setCertifications] = useState<string[]>([])
+  const producers = getAllProducers()
+  const regions = getUniqueRegions()
+  const certifications = getUniqueCertifications()
+
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRegion, setSelectedRegion] = useState("Todas las regiones")
   const [selectedCertification, setSelectedCertification] = useState("Todas las certificaciones")
 
-  // 🔹 Cargar productores desde Supabase
-  useEffect(() => {
-    async function loadProducers() {
-      const { data, error } = await supabase.from("producers").select("*")
+  const filteredProducers = producers.filter((producer) => {
+    const matchesSearch =
+      producer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      producer.farmName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      producer.location.toLowerCase().includes(searchTerm.toLowerCase())
 
-      if (error) {
-        console.error("Error cargando productores:", error)
-        return
-      }
+    const producerRegion = producer.location.split(",")[0].trim()
+    const matchesRegion = selectedRegion === "Todas las regiones" || producerRegion === selectedRegion
 
-      setProducers(data)
+    const matchesCertification =
+      selectedCertification === "Todas las certificaciones" || producer.certifications.includes(selectedCertification)
 
-      // Extraer regiones únicas
-      const uniqueRegions = [
-        "Todas las regiones",
-        ...Array.from(new Set(data.map((p) => p.location?.split(",")[0].trim()))),
-      ]
-      setRegions(uniqueRegions)
-
-      // Extraer certificaciones únicas
-      const uniqueCerts = [
-        "Todas las certificaciones",
-        ...Array.from(new Set(data.flatMap((p) => p.certifications || []))),
-      ]
-      setCertifications(uniqueCerts)
-
-      setFilteredProducers(data)
-    }
-
-    loadProducers()
-  }, [])
-
-  // 🔹 Filtros dinámicos
-  useEffect(() => {
-    const filtered = producers.filter((producer) => {
-      const matchesSearch =
-        producer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        producer.farm_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        producer.location.toLowerCase().includes(searchTerm.toLowerCase())
-
-      const producerRegion = producer.location.split(",")[0].trim()
-      const matchesRegion = selectedRegion === "Todas las regiones" || producerRegion === selectedRegion
-
-      const matchesCertification =
-        selectedCertification === "Todas las certificaciones" ||
-        (producer.certifications || []).includes(selectedCertification)
-
-      return matchesSearch && matchesRegion && matchesCertification
-    })
-
-    setFilteredProducers(filtered)
-  }, [searchTerm, selectedRegion, selectedCertification, producers])
+    return matchesSearch && matchesRegion && matchesCertification
+  })
 
   return (
     <div>
@@ -170,14 +144,14 @@ export function ProducersPage() {
                   >
                     <div className="relative h-64">
                       <Image
-                        src={producer.profile_image || "/placeholder.svg"}
+                        src={producer.profileImage || "/placeholder.svg"}
                         alt={`${producer.name} - ${producer.farmName}`}
                         fill
                         className="object-cover"
                       />
                       <div className="absolute top-4 right-4">
                         <Badge variant="secondary" className="bg-coffee-dark text-white">
-                          {producer.products?.length || 0} productos
+                          {producer.products.length} productos
                         </Badge>
                       </div>
                     </div>
@@ -192,7 +166,7 @@ export function ProducersPage() {
                         </div>
                       </div>
 
-                      <p className="text-coffee-medium text-sm mb-4 line-clamp-3">{producer.story?.split("\n\n")[0]}</p>
+                      <p className="text-coffee-medium text-sm mb-4 line-clamp-3">{producer.story.split("\n\n")[0]}</p>
 
                       <div className="space-y-3 mb-4">
                         <div className="flex justify-between text-sm">
@@ -201,24 +175,22 @@ export function ProducersPage() {
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-coffee-medium">Altitud:</span>
-                          <span className="font-medium text-gray-900">{producer.altitude}</span>
+                          <span className="font-medium text-gray-900">{producer.stats.altitude}</span>
                         </div>
-                        {producer.varieties && (
-                          <div className="text-sm">
-                            <span className="text-coffee-medium">Variedades:</span>
-                            <div className="mt-1 flex flex-wrap gap-1">
-                              {producer.varieties.split(",").map((variety: string) => (
-                                <Badge
-                                  key={variety}
-                                  variant="outline"
-                                  className="text-xs border-coffee-light text-coffee-medium"
-                                >
-                                  {variety.trim()}
-                                </Badge>
-                              ))}
-                            </div>
+                        <div className="text-sm">
+                          <span className="text-coffee-medium">Variedades:</span>
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {producer.stats.varieties.split(", ").map((variety) => (
+                              <Badge
+                                key={variety}
+                                variant="outline"
+                                className="text-xs border-coffee-light text-coffee-medium"
+                              >
+                                {variety}
+                              </Badge>
+                            ))}
                           </div>
-                        )}
+                        </div>
                       </div>
 
                       <div className="mb-4">
@@ -227,7 +199,7 @@ export function ProducersPage() {
                           <span className="text-sm text-coffee-medium">Certificaciones:</span>
                         </div>
                         <div className="flex flex-wrap gap-1">
-                          {(producer.certifications || []).map((cert: string) => (
+                          {producer.certifications.map((cert) => (
                             <Badge key={cert} className="text-xs bg-accent text-coffee-dark">
                               {cert}
                             </Badge>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -11,105 +11,58 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Star, Filter, ShoppingCart } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
+import { products as allProducts } from "@/lib/products-data"
 import { useToast } from "@/hooks/use-toast"
-import { supabase } from "@/lib/supabaseClient"
-
-interface Product {
-  id: number
-  name: string
-  origin: string
-  price: number
-  original_price?: number
-  rating: number
-  reviews: number
-  roast_level: string
-  tasting_notes: string[]
-  description: string
-  images: string[]
-  in_stock: boolean
-  stock_count: number
-  producer_id?: number
-}
 
 export function ProductCatalog() {
   const { addItem } = useCart()
   const { toast } = useToast()
 
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-
   const [priceRange, setPriceRange] = useState([30000, 60000])
   const [selectedOrigins, setSelectedOrigins] = useState<string[]>([])
   const [selectedRoastLevels, setSelectedRoastLevels] = useState<string[]>([])
+  const [selectedBrewingMethods, setSelectedBrewingMethods] = useState<string[]>([])
   const [sortBy, setSortBy] = useState("featured")
   const [currentPage, setCurrentPage] = useState(1)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
 
   const itemsPerPage = 6
-
-  // 🧩 Fetch de productos desde Supabase
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true)
-      const { data, error } = await supabase.from("products").select("*")
-      if (error) console.error("Error al cargar productos:", error)
-      else setProducts(data || [])
-      setLoading(false)
-    }
-
-    fetchProducts()
-  }, [])
-
-  // Filtrado local
-  const filteredProducts = products.filter((product) => {
-    const inPriceRange = product.price >= priceRange[0] && product.price <= priceRange[1]
-    const matchesOrigin =
-      selectedOrigins.length === 0 || selectedOrigins.includes(product.origin)
-    const matchesRoast =
-      selectedRoastLevels.length === 0 || selectedRoastLevels.includes(product.roast_level)
-
-    return inPriceRange && matchesOrigin && matchesRoast
-  })
-
-  // Ordenamiento
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    switch (sortBy) {
-      case "price-low":
-        return a.price - b.price
-      case "price-high":
-        return b.price - a.price
-      case "rating":
-        return b.rating - a.rating
-      case "newest":
-        return b.id - a.id
-      default:
-        return 0
-    }
-  })
-
-  // Paginación
-  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage)
+  const totalPages = Math.ceil(allProducts.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
-  const currentProducts = sortedProducts.slice(startIndex, endIndex)
+  const currentProducts = allProducts.slice(startIndex, endIndex)
 
   const origins = ["Nariño", "Huila", "Eje Cafetero", "Tolima", "Cauca", "Santander", "Valle del Cauca", "Boyacá"]
   const roastLevels = ["Suave", "Medio", "Fuerte"]
+  const brewingMethods = ["Espresso", "V60", "Chemex", "Prensa Francesa", "Moka"]
 
   const handleOriginChange = (origin: string, checked: boolean) => {
-    setSelectedOrigins((prev) =>
-      checked ? [...prev, origin] : prev.filter((o) => o !== origin)
-    )
+    if (checked) {
+      setSelectedOrigins([...selectedOrigins, origin])
+    } else {
+      setSelectedOrigins(selectedOrigins.filter((o) => o !== origin))
+    }
   }
 
   const handleRoastLevelChange = (level: string, checked: boolean) => {
-    setSelectedRoastLevels((prev) =>
-      checked ? [...prev, level] : prev.filter((l) => l !== level)
-    )
+    if (checked) {
+      setSelectedRoastLevels([...selectedRoastLevels, level])
+    } else {
+      setSelectedRoastLevels(selectedRoastLevels.filter((l) => l !== level))
+    }
   }
 
-  const handleAddToCart = (product: Product) => {
+  const handleBrewingMethodChange = (method: string, checked: boolean) => {
+    if (checked) {
+      setSelectedBrewingMethods([...selectedBrewingMethods, method])
+    } else {
+      setSelectedBrewingMethods(selectedBrewingMethods.filter((m) => m !== method))
+    }
+  }
+
+  const handleAddToCart = (product: (typeof allProducts)[0]) => {
     addItem(product.id, 1)
+
     toast({
       title: "Producto agregado",
       description: `${product.name} se agregó al carrito`,
@@ -175,16 +128,27 @@ export function ProductCatalog() {
           ))}
         </div>
       </div>
+
+      {/* Brewing Method Filter */}
+      <div>
+        <h3 className="font-poppins font-semibold text-lg text-coffee-primary mb-4">Método de Preparación</h3>
+        <div className="space-y-3">
+          {brewingMethods.map((method) => (
+            <div key={method} className="flex items-center space-x-2">
+              <Checkbox
+                id={`brewing-${method}`}
+                checked={selectedBrewingMethods.includes(method)}
+                onCheckedChange={(checked) => handleBrewingMethodChange(method, checked as boolean)}
+              />
+              <label htmlFor={`brewing-${method}`} className="text-sm text-foreground cursor-pointer">
+                {method}
+              </label>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
-
-  if (loading) {
-    return (
-      <div className="py-16 text-center text-coffee-primary font-semibold text-lg">
-        Cargando productos...
-      </div>
-    )
-  }
 
   return (
     <section className="py-8 bg-white">
@@ -198,7 +162,7 @@ export function ProductCatalog() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar */}
+          {/* Desktop Sidebar */}
           <aside className="hidden lg:block w-80 flex-shrink-0">
             <div className="sticky top-24 bg-coffee-beige rounded-lg p-6">
               <h2 className="font-poppins font-bold text-xl text-coffee-primary mb-6">Filtros</h2>
@@ -206,7 +170,7 @@ export function ProductCatalog() {
             </div>
           </aside>
 
-          {/* Mobile Filters */}
+          {/* Mobile Filter Button */}
           <div className="lg:hidden">
             <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
               <SheetTrigger asChild>
@@ -224,12 +188,12 @@ export function ProductCatalog() {
             </Sheet>
           </div>
 
-          {/* 🧱 Main Content */}
+          {/* Main Content */}
           <div className="flex-1">
             {/* Sort and Results */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <p className="text-muted-foreground">
-                Mostrando {startIndex + 1}-{Math.min(endIndex, filteredProducts.length)} de {filteredProducts.length} productos
+                Mostrando {startIndex + 1}-{Math.min(endIndex, allProducts.length)} de {allProducts.length} productos
               </p>
 
               <Select value={sortBy} onValueChange={setSortBy}>
@@ -247,60 +211,72 @@ export function ProductCatalog() {
             </div>
 
             {/* Product Grid */}
-            {currentProducts.length === 0 ? (
-              <p className="text-center text-muted-foreground">No se encontraron productos.</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-                {currentProducts.map((product) => (
-                  <Card key={product.id} className="group hover:shadow-lg transition-all duration-300 border-coffee-light">
-                    <CardContent className="p-0">
-                      <div className="relative overflow-hidden rounded-t-lg">
-                        <img
-                          src={product.images?.[0] || "/placeholder.svg"}
-                          alt={product.name}
-                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+              {currentProducts.map((product) => (
+                <Card
+                  key={product.id}
+                  className="group hover:shadow-lg transition-all duration-300 border-coffee-light"
+                >
+                  <CardContent className="p-0">
+                    <div className="relative overflow-hidden rounded-t-lg">
+                      <img
+                        src={product.images[0] || "/placeholder.svg"}
+                        alt={product.name}
+                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute top-3 left-3 flex flex-col gap-1">
+                        {product.badges?.isNew && <Badge className="bg-accent text-white">Nuevo</Badge>}
+                        {product.badges?.isBestseller && (
+                          <Badge className="bg-coffee-primary text-white">Más Vendido</Badge>
+                        )}
+                        {product.badges?.isOrganic && (
+                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                            Orgánico
+                          </Badge>
+                        )}
+                        {product.badges?.isLimited && <Badge variant="destructive">Edición Limitada</Badge>}
+                      </div>
+                    </div>
+
+                    <div className="p-4 space-y-3">
+                      <div>
+                        <h3 className="font-poppins font-semibold text-lg text-coffee-primary">{product.name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {product.origin} • {product.roastLevel}
+                        </p>
                       </div>
 
-                      <div className="p-4 space-y-3">
-                        <div>
-                          <h3 className="font-poppins font-semibold text-lg text-coffee-primary">{product.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {product.origin} • {product.roast_level}
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                          <span className="text-sm font-medium">{product.rating}</span>
-                          <span className="text-sm text-muted-foreground">({product.reviews} reseñas)</span>
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <span className="font-poppins font-bold text-xl text-coffee-primary">
-                            ${product.price.toLocaleString()}
-                          </span>
-                        </div>
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm font-medium">{product.rating}</span>
+                        <span className="text-sm text-muted-foreground">({product.reviews} reseñas)</span>
                       </div>
-                    </CardContent>
 
-                    <CardFooter className="p-4 pt-0 flex flex-col gap-2">
-                      <Button
-                        variant="outline"
-                        className="w-full border-coffee-primary text-coffee-primary hover:bg-coffee-primary hover:text-white bg-transparent"
-                        onClick={() => handleAddToCart(product)}
-                      >
-                        <ShoppingCart className="h-4 w-4 mr-2" />
-                        Agregar al Carrito
-                      </Button>
-                      <Button asChild className="w-full bg-coffee-primary hover:bg-coffee-secondary">
-                        <Link href={`/product/${product.id}`}>Ver Detalles</Link>
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            )}
+                      <div className="flex items-center justify-between">
+                        <span className="font-poppins font-bold text-xl text-coffee-primary">
+                          ${product.price.toLocaleString()}
+                        </span>
+                        <span className="text-sm text-muted-foreground">{product.weight}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+
+                  <CardFooter className="p-4 pt-0 flex flex-col gap-2">
+                    <Button
+                      variant="outline"
+                      className="w-full border-coffee-primary text-coffee-primary hover:bg-coffee-primary hover:text-white bg-transparent"
+                      onClick={() => handleAddToCart(product)}
+                    >
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      Agregar al Carrito
+                    </Button>
+                    <Button asChild className="w-full bg-coffee-primary hover:bg-coffee-secondary">
+                      <Link href={`/product/${product.id}`}>Ver Detalles</Link>
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
 
             {/* Pagination */}
             <div className="flex justify-center items-center space-x-2">
