@@ -50,34 +50,33 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [items, isLoaded])
 
-  const addItem = (productId: number, quantity: number) => {
-    const product = getProductById(productId)
+    const addItem = async (productId: number, quantity: number) => {
+    const product = await getProductById(productId)
     if (!product) return
 
     setItems((currentItems) => {
       const existingItem = currentItems.find((item) => item.id === productId)
 
       if (existingItem) {
-        // Update quantity if item already exists
         return currentItems.map((item) =>
-          item.id === productId ? { ...item, quantity: item.quantity + quantity } : item,
+          item.id === productId ? { ...item, quantity: item.quantity + quantity } : item
         )
       } else {
-        // Add new item
         const newItem: CartItem = {
           id: product.id,
           name: product.name,
           origin: product.origin,
           price: product.price,
           quantity,
-          image: product.images[0],
-          roastLevel: product.roastLevel,
-          weight: product.specifications.weight,
+          image: product.images?.[0] || "/placeholder.svg",
+          roastLevel: product.roastLevel || "",
+          weight: product.specifications?.weight || "",
         }
         return [...currentItems, newItem]
       }
     })
   }
+
 
   const removeItem = (productId: number) => {
     setItems((currentItems) => currentItems.filter((item) => item.id !== productId))
