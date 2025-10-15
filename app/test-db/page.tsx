@@ -1,56 +1,97 @@
-import { createClient } from "@/lib/supabase/server"
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle2, XCircle, Database, AlertCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { CheckCircle2, XCircle, Database, AlertCircle, Lock } from "lucide-react"
 
-export default async function TestDBPage() {
-  let connectionStatus = "disconnected"
-  let errorMessage = ""
-  const envVarsPresent = {
-    url: false,
-    anonKey: false,
-  }
-  const testResults: { table: string; status: string; count?: number }[] = []
+export default function TestDBPage() {
+  const [password, setPassword] = useState("")
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [showError, setShowError] = useState(false)
+  const [testData, setTestData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
-  try {
-    // Check environment variables
-    envVarsPresent.url = !!process.env.NEXT_PUBLIC_SUPABASE_URL
-    envVarsPresent.anonKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
 
-    if (!envVarsPresent.url || !envVarsPresent.anonKey) {
-      connectionStatus = "error"
-      errorMessage = "Variables de entorno de Supabase no configuradas"
+    if (password === "200318iA#") {
+      setIsAuthenticated(true)
+      setShowError(false)
+      setIsLoading(true)
+
+      // Fetch test data from API route
+      try {
+        const response = await fetch("/api/test-db")
+        const data = await response.json()
+        setTestData(data)
+      } catch (error) {
+        console.error("Error fetching test data:", error)
+      } finally {
+        setIsLoading(false)
+      }
     } else {
-      const supabase = await createClient()
-
-      const tablesToTest = ["products", "users", "producers", "orders"]
-
-      for (const table of tablesToTest) {
-        try {
-          const { data, error, count } = await supabase.from(table).select("*", { count: "exact", head: true })
-
-          if (error) {
-            testResults.push({ table, status: "not_found" })
-          } else {
-            testResults.push({ table, status: "found", count: count || 0 })
-            connectionStatus = "connected"
-          }
-        } catch (err) {
-          testResults.push({ table, status: "error" })
-        }
-      }
-
-      // If no tables were found, still mark as connected if we could create client
-      if (connectionStatus !== "connected" && supabase) {
-        connectionStatus = "connected"
-        errorMessage =
-          "Conexión exitosa, pero no se encontraron tablas comunes. Tu compañero puede que aún no haya creado las tablas."
-      }
+      setShowError(true)
     }
-  } catch (error) {
-    connectionStatus = "error"
-    errorMessage = error instanceof Error ? error.message : "Error desconocido al conectar"
   }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="container mx-auto py-12 px-4">
+        <div className="max-w-md mx-auto">
+          <Card>
+            <CardHeader className="text-center">
+              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                <Lock className="h-6 w-6 text-primary" />
+              </div>
+              <CardTitle>Acceso Restringido</CardTitle>
+              <CardDescription>Ingresa la contraseña para ver el test de base de datos</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Input
+                    type="password"
+                    placeholder="Contraseña"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value)
+                      setShowError(false)
+                    }}
+                    className={showError ? "border-red-500" : ""}
+                  />
+                  {showError && <p className="text-sm text-red-500">Contraseña incorrecta</p>}
+                </div>
+                <Button type="submit" className="w-full">
+                  Acceder
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-12 px-4">
+        <div className="max-w-2xl mx-auto text-center">
+          <p>Cargando información de la base de datos...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!testData) {
+    return null
+  }
+
+  const { connectionStatus, errorMessage, envVarsPresent, testResults } = testData
 
   return (
     <div className="container mx-auto py-12 px-4">
@@ -94,9 +135,9 @@ export default async function TestDBPage() {
                     <XCircle className="h-4 w-4 text-red-500" />
                   )}
                   <span>NEXT_PUBLIC_SUPABASE_URL</span>
-                  {envVarsPresent.url && (
+                  {envVarsPresent.url && envVarsPresent.urlValue && (
                     <span className="text-muted-foreground text-xs">
-                      ({process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30)}...)
+                      ({envVarsPresent.urlValue.substring(0, 30)}...)
                     </span>
                   )}
                 </div>
@@ -124,28 +165,35 @@ export default async function TestDBPage() {
               </div>
             )}
 
-            {testResults.length > 0 && (
+            {testResults && testResults.length > 0 && (
               <div className="space-y-2">
                 <p className="text-sm font-medium">Tablas en la base de datos:</p>
                 <div className="space-y-2">
-                  {testResults.map((result) => (
+                  {testResults.map((result: any) => (
                     <div key={result.table} className="flex items-center justify-between p-2 bg-muted/50 rounded">
                       <div className="flex items-center gap-2">
                         {result.status === "found" ? (
                           <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        ) : result.status === "error" ? (
+                          <AlertCircle className="h-4 w-4 text-amber-500" />
                         ) : (
                           <XCircle className="h-4 w-4 text-gray-400" />
                         )}
                         <span className="text-sm font-mono">{result.table}</span>
                       </div>
-                      {result.status === "found" && (
-                        <Badge variant="outline" className="text-xs">
-                          {result.count} registros
-                        </Badge>
-                      )}
-                      {result.status === "not_found" && (
-                        <span className="text-xs text-muted-foreground">No existe</span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {result.status === "found" && (
+                          <Badge variant="outline" className="text-xs">
+                            {result.count} registros
+                          </Badge>
+                        )}
+                        {result.status === "not_found" && (
+                          <span className="text-xs text-muted-foreground">No existe</span>
+                        )}
+                        {result.status === "error" && result.error && (
+                          <span className="text-xs text-amber-600">Error</span>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -176,7 +224,7 @@ export default async function TestDBPage() {
             </p>
             <p className="text-muted-foreground">
               Nota: Esta página solo funcionará en producción (Vercel) donde las variables de entorno están
-              configuradas. En el preview de v0 mostrará error porque las variables no están disponibles aquí.
+              configuradas.
             </p>
           </CardContent>
         </Card>
