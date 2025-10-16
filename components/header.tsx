@@ -12,6 +12,8 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import Image from "next/image"
 import { useCart } from "@/lib/cart-context"
 import { NotificationsPanel } from "@/components/notifications-panel"
+import { supabaseBrowser } from "@/lib/supabaseClient"
+import { useUser } from "@/hooks/useUser"
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
@@ -19,6 +21,7 @@ export function Header() {
   const cartCount = getTotalItems()
   const [searchQuery, setSearchQuery] = useState("")
   const router = useRouter()
+  const { user, loading } = useUser()
 
   const navigation = [
     { name: "Inicio", href: "/" },
@@ -87,16 +90,40 @@ export function Header() {
               </Button>
             </Link>
 
-            <Link href="/login">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="hidden sm:flex items-center space-x-2 text-coffee-primary hover:text-coffee-secondary hover:bg-coffee-primary/5 transition-all duration-300 rounded-full px-4 py-2"
-              >
-                <User className="h-4 w-4" />
-                <span className="font-medium">Ingresar</span>
-              </Button>
-            </Link>
+            {/* 👤 Login / Usuario */}
+            {!loading && (
+              <>
+                {user ? (
+                  <>
+                    <span className="hidden sm:flex text-coffee-primary font-medium">
+                      {user.user_metadata.full_name || user.email || "Usuario"}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={async () => {
+                        await supabaseBrowser.auth.signOut()
+                        window.location.href = "/"
+                      }}
+                      className="hidden sm:flex items-center space-x-2 text-coffee-primary hover:text-coffee-secondary hover:bg-coffee-primary/5 transition-all duration-300 rounded-full px-4 py-2"
+                    >
+                      <span className="font-medium">Cerrar sesión</span>
+                    </Button>
+                  </>
+                ) : (
+                  <Link href="/login">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="hidden sm:flex items-center space-x-2 text-coffee-primary hover:text-coffee-secondary hover:bg-coffee-primary/5 transition-all duration-300 rounded-full px-4 py-2"
+                    >
+                      <User className="h-4 w-4" />
+                      <span className="font-medium">Ingresar</span>
+                    </Button>
+                  </Link>
+                )}
+              </>
+            )}
 
             <div className="hidden sm:block">
               <NotificationsPanel />

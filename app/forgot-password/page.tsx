@@ -10,15 +10,27 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import Link from "next/link"
 import { Mail, ArrowLeft } from "lucide-react"
 import { useState } from "react"
+import { supabase } from "@/lib/supabaseClient"
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
   const [submitted, setSubmitted] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Aquí iría la lógica para enviar el email de recuperación
-    setSubmitted(true)
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+
+      if (error) throw error
+
+      setSubmitted(true)
+    } catch (error: any) {
+      console.error("Error enviando correo de recuperación:", error.message)
+      alert("No se pudo enviar el correo de recuperación. Verifica el email e intenta nuevamente.")
+    }
   }
 
   return (
