@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { createBrowserClient } from "@/lib/supabase/client"
+import { supabaseBrowserClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,7 +10,7 @@ export default function TestLoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [result, setResult] = useState<any>(null)
-  const supabase = createBrowserClient()
+  const supabase = supabaseBrowserClient()
 
   const testLogin = async () => {
     console.log("[v0] Testing login with:", email)

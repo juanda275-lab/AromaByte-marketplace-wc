@@ -13,7 +13,7 @@ import { Mail, Lock, Eye, EyeOff, User, AlertCircle } from "lucide-react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseBrowserClient } from "@/lib/supabase/client"
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -60,7 +60,7 @@ export default function RegisterPage() {
     }
 
     try {
-      const supabase = createClient()
+      const supabase = supabaseBrowserClient()
 
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,

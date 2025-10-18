@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, Circle, Package, MapPin, Calendar, DollarSign, ArrowLeft } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseBrowserClient } from "@/lib/supabase/client"
 import Image from "next/image"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
@@ -60,7 +60,7 @@ export default function OrderTrackingPage() {
 
   const fetchOrder = async () => {
     try {
-      const supabase = createClient()
+      const supabase = supabaseBrowserClient()
       const { data, error } = await supabase
         .from("orders")
         .select(
