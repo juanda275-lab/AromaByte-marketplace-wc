@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -17,9 +17,56 @@ export function ProductDetail({ productId }: ProductDetailProps) {
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [isWishlisted, setIsWishlisted] = useState(false)
+  const [isLoadingFavorite, setIsLoadingFavorite] = useState(false)
   const { addItem } = useCart()
 
   const product = getProductById(Number.parseInt(productId))
+
+  useEffect(() => {
+    checkIfFavorite()
+  }, [productId])
+
+  const checkIfFavorite = async () => {
+    try {
+      const response = await fetch("/api/favorites")
+      if (response.ok) {
+        const data = await response.json()
+        const isFav = data.favorites.some((fav: any) => fav.product_id === product.id)
+        setIsWishlisted(isFav)
+      }
+    } catch (error) {
+      console.error("[v0] Error checking favorite:", error)
+    }
+  }
+
+  const toggleFavorite = async () => {
+    setIsLoadingFavorite(true)
+    try {
+      if (isWishlisted) {
+        const response = await fetch("/api/favorites", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId: product.id }),
+        })
+        if (response.ok) {
+          setIsWishlisted(false)
+        }
+      } else {
+        const response = await fetch("/api/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId: product.id }),
+        })
+        if (response.ok) {
+          setIsWishlisted(true)
+        }
+      }
+    } catch (error) {
+      console.error("[v0] Error toggling favorite:", error)
+    } finally {
+      setIsLoadingFavorite(false)
+    }
+  }
 
   if (!product) {
     return (
@@ -193,7 +240,8 @@ export function ProductDetail({ productId }: ProductDetailProps) {
                 <Button
                   variant="outline"
                   size="lg"
-                  onClick={() => setIsWishlisted(!isWishlisted)}
+                  onClick={toggleFavorite}
+                  disabled={isLoadingFavorite}
                   className={isWishlisted ? "bg-red-50 border-red-200 text-red-600" : ""}
                 >
                   <Heart className={`h-5 w-5 ${isWishlisted ? "fill-current" : ""}`} />

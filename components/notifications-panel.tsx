@@ -64,7 +64,7 @@ export function NotificationsPanel() {
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-96 z-[100] shadow-2xl border-coffee-light/20">
+      <DropdownMenuContent align="end" className="w-96 shadow-2xl border-coffee-light/20">
         <div className="flex items-center justify-between px-4 py-3 border-b border-coffee-light/20 bg-gradient-to-r from-coffee-primary/5 to-coffee-secondary/5">
           <h3 className="font-semibold text-coffee-primary">Notificaciones</h3>
           {unreadCount > 0 && <Badge className="bg-red-500 text-white">{unreadCount} nuevas</Badge>}

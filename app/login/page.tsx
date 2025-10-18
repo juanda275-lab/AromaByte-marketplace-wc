@@ -1,47 +1,75 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { Mail, Lock, Eye, EyeOff } from "lucide-react"
-
+import type React from "react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-
-import { supabaseBrowser } from "@/lib/supabaseClient" // 👈 importa tu cliente de navegador
+import Link from "next/link"
+import { Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle } from "lucide-react"
+import { useState } from "react"
+import { createClient } from "@/lib/supabase/client"
+import { useRouter, useSearchParams } from "next/navigation"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const registered = searchParams.get("registered")
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
-    const { data, error } = await supabaseBrowser.auth.signInWithPassword({
-      email,
-      password,
-    })
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get("email") as string
+    const password = formData.get("password") as string
 
-    setLoading(false)
-
-    if (error) {
-      console.error("❌ Error al iniciar sesión:", error)
-      setError("Correo o contraseña incorrectos")
+    if (!email || !password) {
+      setError("Por favor completa todos los campos")
+      setLoading(false)
       return
     }
 
-    console.log("✅ Sesión iniciada:", data)
-    router.push("/") // 👈 Redirige al inicio (ajústalo según tu flujo)
+    try {
+      const supabase = createClient()
+
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInError) {
+        setError("Email o contraseña incorrectos")
+        setLoading(false)
+        return
+      }
+
+      if (!data.user) {
+        setError("Error al iniciar sesión")
+        setLoading(false)
+        return
+      }
+
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).single()
+
+      if (profile?.role === "admin") {
+        router.push("/dashboard/admin")
+      } else if (profile?.role === "producer") {
+        router.push("/dashboard/producer")
+      } else {
+        router.push("/dashboard/customer")
+      }
+    } catch (err) {
+      console.error("[v0] Login error:", err)
+      setError("Ocurrió un error al iniciar sesión")
+      setLoading(false)
+    }
   }
 
   return (
@@ -50,12 +78,8 @@ export default function LoginPage() {
       <main className="flex-1 flex items-center justify-center py-12 px-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-coffee-primary mb-2">
-              Ingresar a tu cuenta
-            </h1>
-            <p className="text-gray-600">
-              Bienvenido de vuelta. Ingresa tus datos para continuar.
-            </p>
+            <h1 className="text-3xl font-bold text-coffee-primary mb-2">Ingresar a tu cuenta</h1>
+            <p className="text-gray-600">Bienvenido de vuelta. Ingresa tus datos para continuar.</p>
           </div>
 
           <Card>
@@ -63,25 +87,30 @@ export default function LoginPage() {
               <CardTitle className="text-center">Iniciar Sesión</CardTitle>
             </CardHeader>
             <CardContent>
-              <form className="space-y-4" onSubmit={handleLogin}>
+              {registered && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-green-800">Cuenta creada exitosamente. Ahora puedes iniciar sesión.</p>
+                </div>
+              )}
+
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                  <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-800">{error}</p>
+                </div>
+              )}
+
+              <form className="space-y-4" onSubmit={handleSubmit}>
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium mb-2">
                     Email
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="tu@email.com"
-                      className="pl-10"
-                      required
-                    />
+                    <Input id="email" name="email" type="email" placeholder="tu@email.com" className="pl-10" required />
                   </div>
                 </div>
-
                 <div>
                   <label htmlFor="password" className="block text-sm font-medium mb-2">
                     Contraseña
@@ -90,9 +119,8 @@ export default function LoginPage() {
                     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <Input
                       id="password"
+                      name="password"
                       type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
                       placeholder="Tu contraseña"
                       className="pl-10 pr-10"
                       required
@@ -106,31 +134,8 @@ export default function LoginPage() {
                     </button>
                   </div>
                 </div>
-
-                {error && <p className="text-red-500 text-sm">{error}</p>}
-
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 text-coffee-primary focus:ring-coffee-primary"
-                    />
-                    <span className="ml-2 text-sm text-gray-600">Recordarme</span>
-                  </label>
-                  <Link
-                    href="/forgot-password"
-                    className="text-sm text-coffee-primary hover:underline"
-                  >
-                    ¿Olvidaste tu contraseña?
-                  </Link>
-                </div>
-
-                <Button
-                  className="w-full bg-coffee-primary hover:bg-coffee-secondary"
-                  type="submit"
-                  disabled={loading}
-                >
-                  {loading ? "Iniciando..." : "Iniciar Sesión"}
+                <Button type="submit" className="w-full bg-coffee-primary hover:bg-coffee-secondary" disabled={loading}>
+                  {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
                 </Button>
               </form>
 
@@ -139,10 +144,7 @@ export default function LoginPage() {
                 <div className="text-center">
                   <p className="text-sm text-gray-600">
                     ¿No tienes una cuenta?{" "}
-                    <Link
-                      href="/register"
-                      className="text-coffee-primary hover:underline font-medium"
-                    >
+                    <Link href="/register" className="text-coffee-primary hover:underline font-medium">
                       Regístrate aquí
                     </Link>
                   </p>
@@ -150,19 +152,6 @@ export default function LoginPage() {
               </div>
             </CardContent>
           </Card>
-
-          <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500">
-              Al iniciar sesión, aceptas nuestros{" "}
-              <Link href="/terms" className="text-coffee-primary hover:underline">
-                Términos de Servicio
-              </Link>{" "}
-              y{" "}
-              <Link href="/privacy" className="text-coffee-primary hover:underline">
-                Política de Privacidad
-              </Link>
-            </p>
-          </div>
         </div>
       </main>
       <Footer />

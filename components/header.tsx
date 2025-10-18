@@ -5,23 +5,31 @@ import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Search, ShoppingCart, User, Menu } from "lucide-react"
+import { Search, ShoppingCart, User, Menu, LogOut, Package, Heart, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import Image from "next/image"
 import { useCart } from "@/lib/cart-context"
+import { useAuth } from "@/lib/auth-context"
 import { NotificationsPanel } from "@/components/notifications-panel"
-import { supabaseBrowser } from "@/lib/supabaseClient"
-import { useUser } from "@/hooks/useUser"
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
   const { getTotalItems } = useCart()
+  const { user, profile, signOut } = useAuth()
   const cartCount = getTotalItems()
   const [searchQuery, setSearchQuery] = useState("")
   const router = useRouter()
-  const { user, loading } = useUser()
 
   const navigation = [
     { name: "Inicio", href: "/" },
@@ -34,6 +42,27 @@ export function Header() {
     if (e.key === "Enter" && searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
     }
+  }
+
+  const getDashboardRoute = () => {
+    if (!profile) return "/login"
+    if (profile.role === "admin") return "/dashboard/admin"
+    if (profile.role === "producer") return "/dashboard/producer"
+    return "/dashboard/customer"
+  }
+
+  const getUserInitials = () => {
+    if (!profile?.full_name) return "U"
+    const names = profile.full_name.split(" ")
+    if (names.length >= 2) {
+      return `${names[0][0]}${names[1][0]}`.toUpperCase()
+    }
+    return profile.full_name[0].toUpperCase()
+  }
+
+  const handleSignOut = async () => {
+    await signOut()
+    router.push("/")
   }
 
   return (
@@ -90,39 +119,67 @@ export function Header() {
               </Button>
             </Link>
 
-            {/* 👤 Login / Usuario */}
-            {!loading && (
-              <>
-                {user ? (
-                  <>
-                    <span className="hidden sm:flex text-coffee-primary font-medium">
-                      {user.user_metadata.full_name || user.email || "Usuario"}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={async () => {
-                        await supabaseBrowser.auth.signOut()
-                        window.location.href = "/"
-                      }}
-                      className="hidden sm:flex items-center space-x-2 text-coffee-primary hover:text-coffee-secondary hover:bg-coffee-primary/5 transition-all duration-300 rounded-full px-4 py-2"
-                    >
-                      <span className="font-medium">Cerrar sesión</span>
-                    </Button>
-                  </>
-                ) : (
-                  <Link href="/login">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="hidden sm:flex items-center space-x-2 text-coffee-primary hover:text-coffee-secondary hover:bg-coffee-primary/5 transition-all duration-300 rounded-full px-4 py-2"
-                    >
-                      <User className="h-4 w-4" />
-                      <span className="font-medium">Ingresar</span>
-                    </Button>
-                  </Link>
-                )}
-              </>
+            {user && profile ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="hidden sm:flex items-center space-x-2 text-coffee-primary hover:text-coffee-secondary hover:bg-coffee-primary/5 transition-all duration-300 rounded-full px-3 py-2"
+                  >
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-coffee-primary text-white text-sm">
+                        {getUserInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="font-medium">{profile.full_name || "Usuario"}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium">{profile.full_name}</p>
+                      <p className="text-xs text-muted-foreground">{profile.email}</p>
+                      <p className="text-xs text-coffee-primary font-semibold capitalize">{profile.role}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push(getDashboardRoute())}>
+                    {profile.role === "admin" ? (
+                      <>
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Panel Admin</span>
+                      </>
+                    ) : profile.role === "producer" ? (
+                      <>
+                        <Package className="mr-2 h-4 w-4" />
+                        <span>Mi Dashboard</span>
+                      </>
+                    ) : (
+                      <>
+                        <Heart className="mr-2 h-4 w-4" />
+                        <span>Mis Pedidos</span>
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Cerrar Sesión</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link href="/login">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="hidden sm:flex items-center space-x-2 text-coffee-primary hover:text-coffee-secondary hover:bg-coffee-primary/5 transition-all duration-300 rounded-full px-4 py-2"
+                >
+                  <User className="h-4 w-4" />
+                  <span className="font-medium">Ingresar</span>
+                </Button>
+              </Link>
             )}
 
             <div className="hidden sm:block">
@@ -194,12 +251,51 @@ export function Header() {
                         onKeyDown={handleSearch}
                       />
                     </div>
-                    <Link href="/login" onClick={() => setIsOpen(false)}>
-                      <Button className="w-full bg-gradient-to-r from-coffee-primary to-coffee-secondary hover:from-coffee-secondary hover:to-coffee-primary text-white font-semibold py-2.5 rounded-full transition-all duration-300 shadow-lg">
-                        <User className="h-4 w-4 mr-2" />
-                        Ingresar
-                      </Button>
-                    </Link>
+                    {user && profile ? (
+                      <>
+                        <div className="p-4 bg-cream/50 rounded-lg">
+                          <div className="flex items-center space-x-3 mb-3">
+                            <Avatar className="h-10 w-10">
+                              <AvatarFallback className="bg-coffee-primary text-white">
+                                {getUserInitials()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-semibold text-coffee-primary">{profile.full_name}</p>
+                              <p className="text-xs text-muted-foreground capitalize">{profile.role}</p>
+                            </div>
+                          </div>
+                          <Button
+                            onClick={() => {
+                              router.push(getDashboardRoute())
+                              setIsOpen(false)
+                            }}
+                            className="w-full mb-2 bg-coffee-primary hover:bg-coffee-secondary"
+                          >
+                            {profile.role === "admin"
+                              ? "Panel Admin"
+                              : profile.role === "producer"
+                                ? "Mi Dashboard"
+                                : "Mis Pedidos"}
+                          </Button>
+                          <Button
+                            onClick={handleSignOut}
+                            variant="outline"
+                            className="w-full border-red-200 text-red-600 hover:bg-red-50 bg-transparent"
+                          >
+                            <LogOut className="h-4 w-4 mr-2" />
+                            Cerrar Sesión
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <Link href="/login" onClick={() => setIsOpen(false)}>
+                        <Button className="w-full bg-gradient-to-r from-coffee-primary to-coffee-secondary hover:from-coffee-secondary hover:to-coffee-primary text-white font-semibold py-2.5 rounded-full transition-all duration-300 shadow-lg">
+                          <User className="h-4 w-4 mr-2" />
+                          Ingresar
+                        </Button>
+                      </Link>
+                    )}
                   </div>
                 </div>
               </SheetContent>

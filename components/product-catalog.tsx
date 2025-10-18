@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -26,15 +26,44 @@ export function ProductCatalog() {
   const [currentPage, setCurrentPage] = useState(1)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
 
+  const filteredAndSortedProducts = useMemo(() => {
+    let filtered = [...allProducts]
+
+    if (selectedOrigins.length > 0) {
+      filtered = filtered.filter((product) => selectedOrigins.some((origin) => product.origin.includes(origin)))
+    }
+
+    if (selectedRoastLevels.length > 0) {
+      filtered = filtered.filter((product) => selectedRoastLevels.includes(product.roastLevel))
+    }
+
+    filtered = filtered.filter((product) => product.price >= priceRange[0] && product.price <= priceRange[1])
+
+    switch (sortBy) {
+      case "price-low":
+        filtered.sort((a, b) => a.price - b.price)
+        break
+      case "price-high":
+        filtered.sort((a, b) => b.price - a.price)
+        break
+      case "rating":
+        filtered.sort((a, b) => b.rating - a.rating)
+        break
+      case "newest":
+        filtered.sort((a, b) => b.id - a.id)
+        break
+      default:
+        break
+    }
+
+    return filtered
+  }, [selectedOrigins, selectedRoastLevels, priceRange, sortBy])
+
   const itemsPerPage = 6
-  const totalPages = Math.ceil(allProducts.length / itemsPerPage)
+  const totalPages = Math.ceil(filteredAndSortedProducts.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
-  const currentProducts = allProducts.slice(startIndex, endIndex)
-
-  const origins = ["Nariño", "Huila", "Eje Cafetero", "Tolima", "Cauca", "Santander", "Valle del Cauca", "Boyacá"]
-  const roastLevels = ["Suave", "Medio", "Fuerte"]
-  const brewingMethods = ["Espresso", "V60", "Chemex", "Prensa Francesa", "Moka"]
+  const currentProducts = filteredAndSortedProducts.slice(startIndex, endIndex)
 
   const handleOriginChange = (origin: string, checked: boolean) => {
     if (checked) {
@@ -42,6 +71,7 @@ export function ProductCatalog() {
     } else {
       setSelectedOrigins(selectedOrigins.filter((o) => o !== origin))
     }
+    setCurrentPage(1)
   }
 
   const handleRoastLevelChange = (level: string, checked: boolean) => {
@@ -50,6 +80,7 @@ export function ProductCatalog() {
     } else {
       setSelectedRoastLevels(selectedRoastLevels.filter((l) => l !== level))
     }
+    setCurrentPage(1)
   }
 
   const handleBrewingMethodChange = (method: string, checked: boolean) => {
@@ -58,6 +89,7 @@ export function ProductCatalog() {
     } else {
       setSelectedBrewingMethods(selectedBrewingMethods.filter((m) => m !== method))
     }
+    setCurrentPage(1)
   }
 
   const handleAddToCart = (product: (typeof allProducts)[0]) => {
@@ -72,26 +104,26 @@ export function ProductCatalog() {
 
   const FilterContent = () => (
     <div className="space-y-6">
-      {/* Origin Filter */}
       <div>
         <h3 className="font-poppins font-semibold text-lg text-coffee-primary mb-4">Origen</h3>
         <div className="space-y-3">
-          {origins.map((origin) => (
-            <div key={origin} className="flex items-center space-x-2">
-              <Checkbox
-                id={`origin-${origin}`}
-                checked={selectedOrigins.includes(origin)}
-                onCheckedChange={(checked) => handleOriginChange(origin, checked as boolean)}
-              />
-              <label htmlFor={`origin-${origin}`} className="text-sm text-foreground cursor-pointer">
-                {origin}
-              </label>
-            </div>
-          ))}
+          {["Nariño", "Huila", "Eje Cafetero", "Tolima", "Cauca", "Santander", "Valle del Cauca", "Boyacá"].map(
+            (origin) => (
+              <div key={origin} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`origin-${origin}`}
+                  checked={selectedOrigins.includes(origin)}
+                  onCheckedChange={(checked) => handleOriginChange(origin, checked as boolean)}
+                />
+                <label htmlFor={`origin-${origin}`} className="text-sm text-foreground cursor-pointer">
+                  {origin}
+                </label>
+              </div>
+            ),
+          )}
         </div>
       </div>
 
-      {/* Price Range Filter */}
       <div>
         <h3 className="font-poppins font-semibold text-lg text-coffee-primary mb-4">Rango de Precio</h3>
         <div className="space-y-4">
@@ -110,11 +142,10 @@ export function ProductCatalog() {
         </div>
       </div>
 
-      {/* Roast Level Filter */}
       <div>
         <h3 className="font-poppins font-semibold text-lg text-coffee-primary mb-4">Nivel de Tueste</h3>
         <div className="space-y-3">
-          {roastLevels.map((level) => (
+          {["Suave", "Medio", "Fuerte"].map((level) => (
             <div key={level} className="flex items-center space-x-2">
               <Checkbox
                 id={`roast-${level}`}
@@ -129,11 +160,10 @@ export function ProductCatalog() {
         </div>
       </div>
 
-      {/* Brewing Method Filter */}
       <div>
         <h3 className="font-poppins font-semibold text-lg text-coffee-primary mb-4">Método de Preparación</h3>
         <div className="space-y-3">
-          {brewingMethods.map((method) => (
+          {["Espresso", "V60", "Chemex", "Prensa Francesa", "Moka"].map((method) => (
             <div key={method} className="flex items-center space-x-2">
               <Checkbox
                 id={`brewing-${method}`}
@@ -153,7 +183,6 @@ export function ProductCatalog() {
   return (
     <section className="py-8 bg-white">
       <div className="container mx-auto px-4">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="font-poppins font-bold text-3xl lg:text-4xl text-coffee-primary mb-4">Catálogo de Café</h1>
           <p className="text-lg text-muted-foreground">
@@ -162,7 +191,6 @@ export function ProductCatalog() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Desktop Sidebar */}
           <aside className="hidden lg:block w-80 flex-shrink-0">
             <div className="sticky top-24 bg-coffee-beige rounded-lg p-6">
               <h2 className="font-poppins font-bold text-xl text-coffee-primary mb-6">Filtros</h2>
@@ -170,7 +198,6 @@ export function ProductCatalog() {
             </div>
           </aside>
 
-          {/* Mobile Filter Button */}
           <div className="lg:hidden">
             <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
               <SheetTrigger asChild>
@@ -188,12 +215,11 @@ export function ProductCatalog() {
             </Sheet>
           </div>
 
-          {/* Main Content */}
           <div className="flex-1">
-            {/* Sort and Results */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <p className="text-muted-foreground">
-                Mostrando {startIndex + 1}-{Math.min(endIndex, allProducts.length)} de {allProducts.length} productos
+                Mostrando {filteredAndSortedProducts.length === 0 ? 0 : startIndex + 1}-
+                {Math.min(endIndex, filteredAndSortedProducts.length)} de {filteredAndSortedProducts.length} productos
               </p>
 
               <Select value={sortBy} onValueChange={setSortBy}>
@@ -210,103 +236,125 @@ export function ProductCatalog() {
               </Select>
             </div>
 
-            {/* Product Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-              {currentProducts.map((product) => (
-                <Card
-                  key={product.id}
-                  className="group hover:shadow-lg transition-all duration-300 border-coffee-light"
+            {filteredAndSortedProducts.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-lg text-muted-foreground mb-4">
+                  No se encontraron productos con los filtros seleccionados
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedOrigins([])
+                    setSelectedRoastLevels([])
+                    setSelectedBrewingMethods([])
+                    setPriceRange([30000, 60000])
+                    setCurrentPage(1)
+                  }}
                 >
-                  <CardContent className="p-0">
-                    <div className="relative overflow-hidden rounded-t-lg">
-                      <img
-                        src={product.images[0] || "/placeholder.svg"}
-                        alt={product.name}
-                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute top-3 left-3 flex flex-col gap-1">
-                        {product.badges?.isNew && <Badge className="bg-accent text-white">Nuevo</Badge>}
-                        {product.badges?.isBestseller && (
-                          <Badge className="bg-coffee-primary text-white">Más Vendido</Badge>
-                        )}
-                        {product.badges?.isOrganic && (
-                          <Badge variant="secondary" className="bg-green-100 text-green-800">
-                            Orgánico
-                          </Badge>
-                        )}
-                        {product.badges?.isLimited && <Badge variant="destructive">Edición Limitada</Badge>}
-                      </div>
-                    </div>
+                  Limpiar Filtros
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+                  {currentProducts.map((product) => (
+                    <Card
+                      key={product.id}
+                      className="group hover:shadow-lg transition-all duration-300 border-coffee-light"
+                    >
+                      <CardContent className="p-0">
+                        <div className="relative overflow-hidden rounded-t-lg">
+                          <img
+                            src={product.images[0] || "/placeholder.svg"}
+                            alt={product.name}
+                            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute top-3 left-3 flex flex-col gap-1">
+                            {product.badges?.isNew && <Badge className="bg-accent text-white">Nuevo</Badge>}
+                            {product.badges?.isBestseller && (
+                              <Badge className="bg-coffee-primary text-white">Más Vendido</Badge>
+                            )}
+                            {product.badges?.isOrganic && (
+                              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                Orgánico
+                              </Badge>
+                            )}
+                            {product.badges?.isLimited && <Badge variant="destructive">Edición Limitada</Badge>}
+                          </div>
+                        </div>
 
-                    <div className="p-4 space-y-3">
-                      <div>
-                        <h3 className="font-poppins font-semibold text-lg text-coffee-primary">{product.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {product.origin} • {product.roastLevel}
-                        </p>
-                      </div>
+                        <div className="p-4 space-y-3">
+                          <div>
+                            <h3 className="font-poppins font-semibold text-lg text-coffee-primary">{product.name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {product.origin} • {product.roastLevel}
+                            </p>
+                          </div>
 
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm font-medium">{product.rating}</span>
-                        <span className="text-sm text-muted-foreground">({product.reviews} reseñas)</span>
-                      </div>
+                          <div className="flex items-center gap-1">
+                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                            <span className="text-sm font-medium">{product.rating}</span>
+                            <span className="text-sm text-muted-foreground">({product.reviews} reseñas)</span>
+                          </div>
 
-                      <div className="flex items-center justify-between">
-                        <span className="font-poppins font-bold text-xl text-coffee-primary">
-                          ${product.price.toLocaleString()}
-                        </span>
-                        <span className="text-sm text-muted-foreground">{product.weight}</span>
-                      </div>
-                    </div>
-                  </CardContent>
+                          <div className="flex items-center justify-between">
+                            <span className="font-poppins font-bold text-xl text-coffee-primary">
+                              ${product.price.toLocaleString()}
+                            </span>
+                            <span className="text-sm text-muted-foreground">{product.weight}</span>
+                          </div>
+                        </div>
+                      </CardContent>
 
-                  <CardFooter className="p-4 pt-0 flex flex-col gap-2">
+                      <CardFooter className="p-4 pt-0 flex flex-col gap-2">
+                        <Button
+                          variant="outline"
+                          className="w-full border-coffee-primary text-coffee-primary hover:bg-coffee-primary hover:text-white bg-transparent"
+                          onClick={() => handleAddToCart(product)}
+                        >
+                          <ShoppingCart className="h-4 w-4 mr-2" />
+                          Agregar al Carrito
+                        </Button>
+                        <Button asChild className="w-full bg-coffee-primary hover:bg-coffee-secondary">
+                          <Link href={`/product/${product.id}`}>Ver Detalles</Link>
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  ))}
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center space-x-2">
                     <Button
                       variant="outline"
-                      className="w-full border-coffee-primary text-coffee-primary hover:bg-coffee-primary hover:text-white bg-transparent"
-                      onClick={() => handleAddToCart(product)}
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
                     >
-                      <ShoppingCart className="h-4 w-4 mr-2" />
-                      Agregar al Carrito
+                      Anterior
                     </Button>
-                    <Button asChild className="w-full bg-coffee-primary hover:bg-coffee-secondary">
-                      <Link href={`/product/${product.id}`}>Ver Detalles</Link>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "default" : "outline"}
+                        onClick={() => setCurrentPage(page)}
+                        className={currentPage === page ? "bg-coffee-primary hover:bg-coffee-secondary" : ""}
+                      >
+                        {page}
+                      </Button>
+                    ))}
+
+                    <Button
+                      variant="outline"
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Siguiente
                     </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-
-            {/* Pagination */}
-            <div className="flex justify-center items-center space-x-2">
-              <Button
-                variant="outline"
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-              >
-                Anterior
-              </Button>
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <Button
-                  key={page}
-                  variant={currentPage === page ? "default" : "outline"}
-                  onClick={() => setCurrentPage(page)}
-                  className={currentPage === page ? "bg-coffee-primary hover:bg-coffee-secondary" : ""}
-                >
-                  {page}
-                </Button>
-              ))}
-
-              <Button
-                variant="outline"
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Siguiente
-              </Button>
-            </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

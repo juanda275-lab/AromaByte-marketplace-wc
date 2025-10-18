@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, Truck, CreditCard } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
+import { useRouter } from "next/navigation"
 
 const shippingOptions = [
   {
@@ -47,6 +48,7 @@ export function ShoppingCartPage() {
   const [selectedShipping, setSelectedShipping] = useState("servientrega")
   const [promoCode, setPromoCode] = useState("")
   const [promoDiscount, setPromoDiscount] = useState(0)
+  const router = useRouter()
 
   const applyPromoCode = () => {
     // Mock promo code logic
@@ -124,6 +126,17 @@ export function ShoppingCartPage() {
                         <p className="text-sm text-muted-foreground">
                           {item.origin} • {item.roastLevel} • {item.weight}
                         </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {item.stockCount > 0 ? (
+                            <span className={item.quantity >= item.stockCount ? "text-amber-600 font-medium" : ""}>
+                              {item.quantity >= item.stockCount
+                                ? "Cantidad máxima alcanzada"
+                                : `${item.stockCount} disponibles`}
+                            </span>
+                          ) : (
+                            <span className="text-red-600">Sin stock</span>
+                          )}
+                        </p>
                       </div>
 
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -135,6 +148,7 @@ export function ShoppingCartPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              disabled={item.quantity <= 1}
                             >
                               <Minus className="h-4 w-4" />
                             </Button>
@@ -143,6 +157,7 @@ export function ShoppingCartPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              disabled={item.quantity >= item.stockCount}
                             >
                               <Plus className="h-4 w-4" />
                             </Button>
@@ -264,9 +279,11 @@ export function ShoppingCartPage() {
                   </div>
                 </div>
 
-                <Button size="lg" className="w-full bg-coffee-primary hover:bg-coffee-secondary">
-                  <CreditCard className="h-5 w-5 mr-2" />
-                  Proceder al Pago
+                <Button asChild size="lg" className="w-full bg-coffee-primary hover:bg-coffee-secondary">
+                  <Link href="/checkout">
+                    <CreditCard className="h-5 w-5 mr-2" />
+                    Proceder al Pago
+                  </Link>
                 </Button>
 
                 <div className="text-center">

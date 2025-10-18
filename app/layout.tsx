@@ -6,6 +6,7 @@ import { Poppins } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { CartProvider } from "@/lib/cart-context"
+import { AuthProvider } from "@/lib/auth-context"
 import "./globals.css"
 
 const poppins = Poppins({
@@ -28,9 +29,11 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} ${poppins.variable}`}>
-        <CartProvider>
-          <Suspense fallback={null}>{children}</Suspense>
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            <Suspense fallback={null}>{children}</Suspense>
+          </CartProvider>
+        </AuthProvider>
         <Analytics />
       </body>
     </html>

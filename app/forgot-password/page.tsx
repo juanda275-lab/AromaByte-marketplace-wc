@@ -8,29 +8,31 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import Link from "next/link"
-import { Mail, ArrowLeft } from "lucide-react"
+import { Mail, ArrowLeft, AlertCircle } from "lucide-react"
 import { useState } from "react"
-import { supabase } from "@/lib/supabaseClient"
+import { resetPassword } from "@/app/actions/auth"
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
   const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
+    setLoading(true)
 
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      })
+    const result = await resetPassword(email)
 
-      if (error) throw error
-
-      setSubmitted(true)
-    } catch (error: any) {
-      console.error("Error enviando correo de recuperación:", error.message)
-      alert("No se pudo enviar el correo de recuperación. Verifica el email e intenta nuevamente.")
+    if (!result.success) {
+      setError(result.error || "Error al enviar el correo de recuperación")
+      setLoading(false)
+      return
     }
+
+    setSubmitted(true)
+    setLoading(false)
   }
 
   return (
@@ -55,6 +57,13 @@ export default function ForgotPasswordPage() {
               )}
             </CardHeader>
             <CardContent>
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                  <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-800">{error}</p>
+                </div>
+              )}
+
               {!submitted ? (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
@@ -74,8 +83,12 @@ export default function ForgotPasswordPage() {
                       />
                     </div>
                   </div>
-                  <Button type="submit" className="w-full bg-coffee-primary hover:bg-coffee-secondary">
-                    Enviar Enlace de Recuperación
+                  <Button
+                    type="submit"
+                    className="w-full bg-coffee-primary hover:bg-coffee-secondary"
+                    disabled={loading}
+                  >
+                    {loading ? "Enviando..." : "Enviar Enlace de Recuperación"}
                   </Button>
                 </form>
               ) : (

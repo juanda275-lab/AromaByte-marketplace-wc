@@ -12,6 +12,7 @@ export interface CartItem {
   image: string
   roastLevel: string
   weight: string
+  stockCount: number
 }
 
 interface CartContextType {
@@ -58,12 +59,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const existingItem = currentItems.find((item) => item.id === productId)
 
       if (existingItem) {
-        // Update quantity if item already exists
-        return currentItems.map((item) =>
-          item.id === productId ? { ...item, quantity: item.quantity + quantity } : item,
-        )
+        const newQuantity = existingItem.quantity + quantity
+        if (newQuantity > product.stockCount) {
+          alert(`Solo hay ${product.stockCount} unidades disponibles de ${product.name}`)
+          return currentItems.map((item) => (item.id === productId ? { ...item, quantity: product.stockCount } : item))
+        }
+        return currentItems.map((item) => (item.id === productId ? { ...item, quantity: newQuantity } : item))
       } else {
-        // Add new item
+        if (quantity > product.stockCount) {
+          alert(`Solo hay ${product.stockCount} unidades disponibles de ${product.name}`)
+          quantity = product.stockCount
+        }
+
         const newItem: CartItem = {
           id: product.id,
           name: product.name,
@@ -73,6 +80,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           image: product.images[0],
           roastLevel: product.roastLevel,
           weight: product.specifications.weight,
+          stockCount: product.stockCount,
         }
         return [...currentItems, newItem]
       }
@@ -86,6 +94,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const updateQuantity = (productId: number, quantity: number) => {
     if (quantity <= 0) {
       removeItem(productId)
+      return
+    }
+
+    const product = getProductById(productId)
+    if (product && quantity > product.stockCount) {
+      alert(`Solo hay ${product.stockCount} unidades disponibles de ${product.name}`)
+      setItems((currentItems) =>
+        currentItems.map((item) => (item.id === productId ? { ...item, quantity: product.stockCount } : item)),
+      )
       return
     }
 

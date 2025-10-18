@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -9,39 +9,123 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Search, MapPin, Award, Users, Coffee } from "lucide-react"
 import { getAllProducers } from "@/lib/producers-data"
+import { createClient } from "@/lib/supabase/client"
 
-const getUniqueRegions = () => {
-  const producers = getAllProducers()
-  const regions = producers.map((p) => p.location.split(",")[0].trim())
+interface DBProducer {
+  id: number
+  user_id: string
+  farm_name: string
+  location: string
+  story: string
+  experience_years: number
+  certifications: string[]
+  profile_image?: string
+  cover_image?: string
+  altitude?: string
+  varieties?: string
+  created_at: string
+}
+
+const getUniqueRegions = (producers: any[]) => {
+  const regions = producers
+    .filter((p) => p.location) // Filter out producers without location
+    .map((p) => p.location.split(",")[0].trim())
   return ["Todas las regiones", ...Array.from(new Set(regions))]
 }
 
-const getUniqueCertifications = () => {
-  const producers = getAllProducers()
-  const allCerts = producers.flatMap((p) => p.certifications)
+const getUniqueCertifications = (producers: any[]) => {
+  const allCerts = producers.flatMap((p) => p.certifications || [])
   return ["Todas las certificaciones", ...Array.from(new Set(allCerts))]
 }
 
 export function ProducersPage() {
-  const producers = getAllProducers()
-  const regions = getUniqueRegions()
-  const certifications = getUniqueCertifications()
+  const [dbProducers, setDbProducers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const staticProducers = getAllProducers()
+
+  useEffect(() => {
+    const fetchProducers = async () => {
+      try {
+        const supabase = createClient()
+
+        const { data, error } = await supabase
+          .from("producers")
+          .select(`
+            *,
+            profiles:user_id (
+              full_name,
+              email
+            )
+          `)
+          .not("user_id", "is", null)
+          .order("created_at", { ascending: false })
+
+        if (error) {
+          console.error("[v0] Error fetching producers:", error)
+          return
+        }
+
+        const producersWithCounts = await Promise.all(
+          (data || []).map(async (p: any) => {
+            const { count } = await supabase
+              .from("products")
+              .select("*", { count: "exact", head: true })
+              .eq("producer_id", p.id)
+
+            return {
+              id: `db-${p.id}`,
+              name: p.profiles?.full_name || p.farm_name || "Productor",
+              farmName: p.farm_name || "Finca sin nombre",
+              location: p.location || "Colombia",
+              story:
+                p.story ||
+                `Productor de café especial en ${p.location || "Colombia"}. Cultivando café de alta calidad con dedicación y pasión.`,
+              experience: p.experience_years ? `${p.experience_years} años` : "Nuevo productor",
+              profileImage: p.profile_image || "/lush-coffee-farm.png",
+              coverImage: p.cover_image || "/rustic-coffee-bag.png",
+              certifications: Array.isArray(p.certifications) ? p.certifications : [],
+              stats: {
+                altitude: p.altitude || "1800 msnm",
+                varieties: p.varieties || "Caturra, Castillo",
+                production: "N/A",
+              },
+              products: Array(count || 0).fill({}),
+            }
+          }),
+        )
+
+        setDbProducers(producersWithCounts)
+      } catch (error) {
+        console.error("[v0] Error loading producers:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProducers()
+  }, [])
+
+  const allProducers = [...dbProducers, ...staticProducers]
+  const regions = getUniqueRegions(allProducers)
+  const certifications = getUniqueCertifications(allProducers)
 
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRegion, setSelectedRegion] = useState("Todas las regiones")
   const [selectedCertification, setSelectedCertification] = useState("Todas las certificaciones")
 
-  const filteredProducers = producers.filter((producer) => {
+  const filteredProducers = allProducers.filter((producer) => {
     const matchesSearch =
-      producer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      producer.farmName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      producer.location.toLowerCase().includes(searchTerm.toLowerCase())
+      producer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      producer.farmName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      producer.location?.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const producerRegion = producer.location.split(",")[0].trim()
+    const producerRegion = producer.location?.split(",")[0]?.trim() || ""
     const matchesRegion = selectedRegion === "Todas las regiones" || producerRegion === selectedRegion
 
     const matchesCertification =
-      selectedCertification === "Todas las certificaciones" || producer.certifications.includes(selectedCertification)
+      selectedCertification === "Todas las certificaciones" ||
+      (producer.certifications && producer.certifications.includes(selectedCertification))
 
     return matchesSearch && matchesRegion && matchesCertification
   })
@@ -62,7 +146,7 @@ export function ProducersPage() {
             <div className="flex flex-wrap justify-center gap-8 text-coffee-medium">
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                <span>{producers.length} Productores</span>
+                <span>{allProducers.length} Productores</span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
@@ -119,7 +203,16 @@ export function ProducersPage() {
             </div>
 
             <div className="mt-4 text-coffee-medium">
-              Mostrando {filteredProducers.length} de {producers.length} productores
+              {loading ? (
+                "Cargando productores..."
+              ) : (
+                <>
+                  Mostrando {filteredProducers.length} de {allProducers.length} productores
+                  {dbProducers.length > 0 && (
+                    <span className="ml-2 text-coffee-primary font-medium">({dbProducers.length} nuevos)</span>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -129,7 +222,12 @@ export function ProducersPage() {
       <section className="py-12 bg-cream">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
-            {filteredProducers.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-12">
+                <Coffee className="h-16 w-16 text-coffee-medium mx-auto mb-4 animate-pulse" />
+                <p className="text-coffee-medium">Cargando productores...</p>
+              </div>
+            ) : filteredProducers.length === 0 ? (
               <div className="text-center py-12">
                 <Coffee className="h-16 w-16 text-coffee-light mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-coffee-dark mb-2">No se encontraron productores</h3>
@@ -151,9 +249,14 @@ export function ProducersPage() {
                       />
                       <div className="absolute top-4 right-4">
                         <Badge variant="secondary" className="bg-coffee-dark text-white">
-                          {producer.products.length} productos
+                          {producer.products?.length || 0} productos
                         </Badge>
                       </div>
+                      {String(producer.id).startsWith("db-") && (
+                        <div className="absolute top-4 left-4">
+                          <Badge className="bg-accent text-coffee-dark">Nuevo</Badge>
+                        </div>
+                      )}
                     </div>
 
                     <CardContent className="p-6">
@@ -166,7 +269,9 @@ export function ProducersPage() {
                         </div>
                       </div>
 
-                      <p className="text-coffee-medium text-sm mb-4 line-clamp-3">{producer.story.split("\n\n")[0]}</p>
+                      <p className="text-coffee-medium text-sm mb-4 line-clamp-3">
+                        {producer.story?.split("\n\n")[0] || producer.story || "Historia del productor"}
+                      </p>
 
                       <div className="space-y-3 mb-4">
                         <div className="flex justify-between text-sm">
@@ -175,37 +280,41 @@ export function ProducersPage() {
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-coffee-medium">Altitud:</span>
-                          <span className="font-medium text-gray-900">{producer.stats.altitude}</span>
+                          <span className="font-medium text-gray-900">{producer.stats?.altitude || "N/A"}</span>
                         </div>
-                        <div className="text-sm">
-                          <span className="text-coffee-medium">Variedades:</span>
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {producer.stats.varieties.split(", ").map((variety) => (
-                              <Badge
-                                key={variety}
-                                variant="outline"
-                                className="text-xs border-coffee-light text-coffee-medium"
-                              >
-                                {variety}
+                        {producer.stats?.varieties && (
+                          <div className="text-sm">
+                            <span className="text-coffee-medium">Variedades:</span>
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {producer.stats.varieties.split(", ").map((variety: string) => (
+                                <Badge
+                                  key={variety}
+                                  variant="outline"
+                                  className="text-xs border-coffee-light text-coffee-medium"
+                                >
+                                  {variety}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {producer.certifications && producer.certifications.length > 0 && (
+                        <div className="mb-4">
+                          <div className="flex items-center gap-1 mb-2">
+                            <Award className="h-4 w-4 text-coffee-medium" />
+                            <span className="text-sm text-coffee-medium">Certificaciones:</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {producer.certifications.map((cert: string) => (
+                              <Badge key={cert} className="text-xs bg-accent text-coffee-dark">
+                                {cert}
                               </Badge>
                             ))}
                           </div>
                         </div>
-                      </div>
-
-                      <div className="mb-4">
-                        <div className="flex items-center gap-1 mb-2">
-                          <Award className="h-4 w-4 text-coffee-medium" />
-                          <span className="text-sm text-coffee-medium">Certificaciones:</span>
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {producer.certifications.map((cert) => (
-                            <Badge key={cert} className="text-xs bg-accent text-coffee-dark">
-                              {cert}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
+                      )}
 
                       <Button asChild className="w-full bg-coffee-primary hover:bg-coffee-dark text-white">
                         <Link href={`/producer/${producer.id}`}>Conocer Historia</Link>

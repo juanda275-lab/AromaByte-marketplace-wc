@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -7,13 +8,115 @@ import { Badge } from "@/components/ui/badge"
 import { MapPin, Award, Coffee, Star, Calendar, Users, Leaf, Heart } from "lucide-react"
 import { getProducerById } from "@/lib/producers-data"
 import { getProductById } from "@/lib/products-data"
+import { createBrowserClient } from "@/lib/supabase/client"
 
 interface ProducerProfileProps {
   producerId: string
 }
 
 export function ProducerProfile({ producerId }: ProducerProfileProps) {
-  const producer = getProducerById(Number.parseInt(producerId))
+  const [producer, setProducer] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [products, setProducts] = useState<any[]>([])
+
+  useEffect(() => {
+    async function loadProducer() {
+      if (producerId.startsWith("db-")) {
+        const dbId = producerId.replace("db-", "")
+        const supabase = createBrowserClient()
+
+        // Fetch producer from database
+        const { data: dbProducer, error } = await supabase
+          .from("producers")
+          .select(`
+            *,
+            profiles:user_id (
+              full_name,
+              email
+            )
+          `)
+          .eq("id", dbId)
+          .single()
+
+        if (error || !dbProducer) {
+          console.error("[v0] Error fetching producer:", error)
+          setProducer(null)
+          setLoading(false)
+          return
+        }
+
+        // Fetch products for this producer
+        const { data: dbProducts } = await supabase.from("products").select("*").eq("producer_id", dbProducer.user_id)
+
+        // Transform database producer to match the expected format
+        const transformedProducer = {
+          id: `db-${dbProducer.id}`,
+          name: dbProducer.profiles?.full_name || "Productor",
+          farmName: dbProducer.farm_name || "Finca",
+          location: dbProducer.location || "Colombia",
+          specialty: dbProducer.specialty || "Café de Especialidad",
+          experience: dbProducer.experience_years ? `${dbProducer.experience_years} años` : "Nuevo productor",
+          story: dbProducer.story || "Historia del productor en construcción.",
+          profileImage: dbProducer.profile_image || "/lush-coffee-farm.png",
+          coverImage: dbProducer.cover_image || "/rustic-coffee-bag.png",
+          certifications: dbProducer.certifications || [],
+          sustainabilityPractices: dbProducer.sustainability_practices || [
+            "Cultivo orgánico",
+            "Conservación del agua",
+            "Energía renovable",
+          ],
+          stats: {
+            altitude: dbProducer.altitude ? `${dbProducer.altitude} msnm` : "1800 msnm",
+            farmSize: dbProducer.farm_size || "5 hectáreas",
+            annualProduction: dbProducer.annual_production || "500 kg/año",
+            varieties: dbProducer.varieties || "Caturra, Castillo",
+            employees: dbProducer.employees || "5",
+            foundedYear: dbProducer.founded_year || new Date().getFullYear(),
+          },
+          products: [],
+        }
+
+        // Transform products
+        const transformedProducts = (dbProducts || []).map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          origin: p.origin || dbProducer.location,
+          roastLevel: p.roast_level || "Medio",
+          price: p.price,
+          weight: p.weight || "250g",
+          rating: p.rating || 4.5,
+          reviews: p.reviews_count || 0,
+          images: [p.image_url || "/rustic-coffee-bag.png"],
+          badges: [],
+        }))
+
+        setProducer(transformedProducer)
+        setProducts(transformedProducts)
+      } else {
+        // Static producer from lib/producers-data
+        const staticProducer = getProducerById(Number.parseInt(producerId))
+        if (staticProducer) {
+          setProducer(staticProducer)
+          const producerProducts = staticProducer.products
+            .map((productId) => getProductById(productId))
+            .filter((product) => product !== undefined)
+          setProducts(producerProducts)
+        }
+      }
+
+      setLoading(false)
+    }
+
+    loadProducer()
+  }, [producerId])
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <p className="text-lg text-muted-foreground">Cargando...</p>
+      </div>
+    )
+  }
 
   if (!producer) {
     return (
@@ -25,10 +128,6 @@ export function ProducerProfile({ producerId }: ProducerProfileProps) {
       </div>
     )
   }
-
-  const producerProducts = producer.products
-    .map((productId) => getProductById(productId))
-    .filter((product) => product !== undefined)
 
   return (
     <div className="bg-white">
@@ -117,7 +216,7 @@ export function ProducerProfile({ producerId }: ProducerProfileProps) {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {producer.certifications.map((cert) => (
+                  {producer.certifications.map((cert: string) => (
                     <Badge key={cert} variant="secondary" className="bg-coffee-primary/10 text-coffee-primary">
                       <Award className="h-3 w-3 mr-1" />
                       {cert}
@@ -165,7 +264,7 @@ export function ProducerProfile({ producerId }: ProducerProfileProps) {
         <div className="mb-12">
           <h2 className="font-poppins font-bold text-2xl text-coffee-primary mb-6">Nuestra Historia</h2>
           <div className="prose prose-lg max-w-none">
-            {producer.story.split("\n\n").map((paragraph, index) => (
+            {producer.story.split("\n\n").map((paragraph: string, index: number) => (
               <p key={index} className="text-muted-foreground leading-relaxed mb-4 text-pretty">
                 {paragraph.trim()}
               </p>
@@ -177,7 +276,7 @@ export function ProducerProfile({ producerId }: ProducerProfileProps) {
         <div className="mb-12">
           <h2 className="font-poppins font-bold text-2xl text-coffee-primary mb-6">Prácticas Sostenibles</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {producer.sustainabilityPractices.map((practice, index) => (
+            {producer.sustainabilityPractices.map((practice: string, index: number) => (
               <div key={index} className="flex items-center gap-3 p-4 bg-coffee-beige rounded-lg">
                 <Leaf className="h-5 w-5 text-green-600 flex-shrink-0" />
                 <span className="text-sm font-medium text-coffee-primary">{practice}</span>
@@ -187,7 +286,7 @@ export function ProducerProfile({ producerId }: ProducerProfileProps) {
         </div>
 
         {/* Producer's Products */}
-        {producerProducts.length > 0 && (
+        {products.length > 0 && (
           <div>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
               <div>
@@ -202,7 +301,7 @@ export function ProducerProfile({ producerId }: ProducerProfileProps) {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {producerProducts.map((product) => (
+              {products.map((product: any) => (
                 <Card
                   key={product.id}
                   className="group hover:shadow-lg transition-all duration-300 border-coffee-light"
@@ -215,7 +314,7 @@ export function ProducerProfile({ producerId }: ProducerProfileProps) {
                         className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       <div className="absolute top-3 left-3 flex flex-col gap-1">
-                        {product.badges?.map((badge) => (
+                        {product.badges?.map((badge: string) => (
                           <Badge key={badge} className="bg-accent text-white">
                             {badge}
                           </Badge>
