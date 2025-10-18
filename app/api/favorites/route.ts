@@ -1,5 +1,7 @@
-import { createClient } from "@/lib/supabase/server"
+export const dynamic = "force-dynamic"
+
 import { NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase/server"
 
 // GET - Obtener favoritos del usuario
 export async function GET() {
