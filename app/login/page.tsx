@@ -10,10 +10,11 @@ import { Separator } from "@/components/ui/separator"
 import Link from "next/link"
 import { Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle } from "lucide-react"
 import { useState } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { useSupabase } from "@/providers/supabase_providers"
 import { useRouter, useSearchParams } from "next/navigation"
 
 export default function LoginPage() {
+  const { supabase } = useSupabase()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -37,8 +38,7 @@ export default function LoginPage() {
     }
 
     try {
-      const supabase = createClient()
-
+      // ✅ Usa el mismo supabase que ya tenías
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -57,17 +57,21 @@ export default function LoginPage() {
       }
 
       const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).single()
-
+      console.log("Usuario autenticado:", data.user)
       if (profile?.role === "admin") {
+        console.log("Usuario autenticado:", data.user)
         router.push("/dashboard/admin")
       } else if (profile?.role === "producer") {
+        console.log("Usuario autenticado:", data.user)
         router.push("/dashboard/producer")
       } else {
+        console.log("Usuario autenticado:", data.user)
         router.push("/dashboard/customer")
       }
     } catch (err) {
       console.error("[v0] Login error:", err)
       setError("Ocurrió un error al iniciar sesión")
+    } finally {
       setLoading(false)
     }
   }

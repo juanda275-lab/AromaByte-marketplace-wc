@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Package, UserIcon, Plus, Edit, AlertCircle } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseBrowserClient } from "@/lib/supabase/client"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 
@@ -80,7 +80,7 @@ export default function ProducerDashboard() {
 
   const fetchProducerData = async () => {
     try {
-      const supabase = createClient()
+      const supabase = supabaseBrowserClient()
 
       // Fetch producer profile
       const { data: producerData, error: producerError } = await supabase
@@ -131,7 +131,7 @@ export default function ProducerDashboard() {
     }
 
     try {
-      const supabase = createClient()
+      const supabase = supabaseBrowserClient()
 
       if (producer) {
         // Update existing producer
@@ -185,7 +185,7 @@ export default function ProducerDashboard() {
     }
 
     try {
-      const supabase = createClient()
+      const supabase = supabaseBrowserClient()
       const { error } = await supabase.from("products").insert(productData)
 
       if (error) throw error

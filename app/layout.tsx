@@ -7,6 +7,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { CartProvider } from "@/lib/cart-context"
 import { AuthProvider } from "@/lib/auth-context"
+import { SupabaseProvider } from "@/providers/supabase_providers"
 import "./globals.css"
 
 const poppins = Poppins({
@@ -29,11 +30,13 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} ${poppins.variable}`}>
-        <AuthProvider>
-          <CartProvider>
-            <Suspense fallback={null}>{children}</Suspense>
-          </CartProvider>
-        </AuthProvider>
+        <SupabaseProvider>
+          <AuthProvider>
+            <CartProvider>
+              <Suspense fallback={null}>{children}</Suspense>
+            </CartProvider>
+          </AuthProvider>
+        </SupabaseProvider>
         <Analytics />
       </body>
     </html>

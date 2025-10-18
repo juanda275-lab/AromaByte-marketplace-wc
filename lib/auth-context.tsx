@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { createContext, useContext, useEffect, useState, useRef } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseBrowserClient } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
 import { useRouter } from "next/navigation"
 
@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = supabaseBrowserClient()
 
   const profileCache = useRef<Map<string, Profile>>(new Map())
   const isFetchingProfile = useRef(false)
